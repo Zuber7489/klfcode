@@ -24,15 +24,45 @@
                         <h1 class="title"> <?= __('Make a Donation', 'psyeventsmanager') ?> </h1>
                         <p>
                             <?php
-                            $tText = 'Your donation will go a long way in helping to save lives by supporting our efforts to promote prevention, early detection, and optimal treatment of gynaecological cancer in Hong Kong';
-                            esc_html_e($tText, 'psyeventsmanager');
-                            ?>.
+                            // Multiple ways to detect Chinese language
+                            $current_locale = get_locale();
+                            $is_chinese = false;
+                            
+                            // Method 1: Check WordPress locale
+                            if ($current_locale === 'zh_HK' || $current_locale === 'zh_CN' || $current_locale === 'zh-HK' || $current_locale === 'zh-CN') {
+                                $is_chinese = true;
+                            }
+                            
+                            // Method 2: Check URL parameters
+                            if (isset($_GET['lang']) && ($_GET['lang'] === 'zh' || $_GET['lang'] === 'zh_HK' || $_GET['lang'] === 'zh-HK')) {
+                                $is_chinese = true;
+                            }
+                            
+                            // Method 3: Check if URL contains /zh/
+                            if (strpos($_SERVER['REQUEST_URI'], '/zh/') !== false || strpos($_SERVER['REQUEST_URI'], '/chinese/') !== false) {
+                                $is_chinese = true;
+                            }
+                            
+                            // Method 4: Check referer URL for language
+                            if (isset($_SERVER['HTTP_REFERER']) && (strpos($_SERVER['HTTP_REFERER'], '/zh/') !== false || strpos($_SERVER['HTTP_REFERER'], 'lang=zh') !== false)) {
+                                $is_chinese = true;
+                            }
+                            
+                            if ($is_chinese) {
+                                echo '您的捐款將大大有助於拯救生命，支持我們在香港推廣婦科癌症的預防、早期檢測及 最佳治療的工作。';
+                            } else {
+                                echo 'Your donation will go a long way in helping to save lives by supporting our efforts to promote prevention, early detection, and optimal treatment of gynaecological cancer in Hong Kong.';
+                            }
+                            ?>
                         </p>
                         <p>
                             <?php
-                            $tText = 'We are a registered charity in both the US and Hong Kong and are able to provide tax deductible receipts for both jurisdictions';
-                            esc_html_e($tText, 'psyeventsmanager');
-                            ?>.
+                            if ($is_chinese) {
+                                echo '我們在美國和香港都是註冊的慈善機構，並能提供兩地的免稅收據。';
+                            } else {
+                                echo 'We are a registered charity in both the US and Hong Kong and are able to provide tax deductible receipts for both jurisdictions.';
+                            }
+                            ?>
                         </p>
                         <p>&nbsp;</p>
                     </div>
@@ -61,7 +91,13 @@
                             </a>
                         </div>
                         <div class="donation_type sponsorship">
-                            <h2><?= __('Donate towards our Core Objectives', 'psyeventsmanager') ?></h2>
+                            <h2><?php
+                            if ($is_chinese) {
+                                echo '捐款予我們的主要項目';
+                            } else {
+                                _e('Donate towards our Core Objectives', 'psyeventsmanager');
+                            }
+                            ?></h2>
                             <p><?= __('Make a targeted impact', 'psyeventsmanager') ?></p>
                             <a href="<?= $onetime_donation_page_link ?>"
                                 class="sponsor-call-to-action">

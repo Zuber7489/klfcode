@@ -280,6 +280,8 @@
     margin-bottom: 30px;
     border-bottom: 2px solid rgba(255, 255, 255, 0.37);
     position: relative;
+    white-space: nowrap;
+    overflow-x: auto;
 }
 
 .donation-amount-select .container .donation-amount:first-of-type {
@@ -314,7 +316,8 @@
     -webkit-transition: all 333ms linear;
     -moz-transition: all 333ms linear;
     transition: all 333ms linear;
-    margin-bottom: 15px;
+    margin-bottom: 0px;
+    white-space: nowrap;
 }
 
 .donation-amount-select .custom-donation-fieldgroup {

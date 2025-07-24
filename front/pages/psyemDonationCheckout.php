@@ -1,5 +1,306 @@
 <?php ob_start(); ?>
 
+<script>
+// JavaScript-based Chinese language detection
+function isChineseLanguageDetected() {
+    // Method 1: Check if gtranslate has set Chinese
+    if (typeof gtranslateSettings !== 'undefined' && gtranslateSettings.current_language === 'zh') {
+        return true;
+    }
+    
+    // Method 2: Check HTML lang attribute
+    var htmlLang = document.documentElement.lang;
+    if (htmlLang === 'zh' || htmlLang === 'zh-HK' || htmlLang === 'zh-CN') {
+        return true;
+    }
+    
+    // Method 3: Check for Chinese text in navigation or headers
+    var navItems = document.querySelectorAll('nav a, .nav a, header a');
+    for (var i = 0; i < navItems.length; i++) {
+        if (navItems[i].textContent.includes('關於我們') || navItems[i].textContent.includes('捐款')) {
+            return true;
+        }
+    }
+    
+    // Method 4: Check current URL for Chinese indicators
+    if (window.location.href.includes('/zh/') || window.location.href.includes('lang=zh')) {
+        return true;
+    }
+    
+    // Method 5: Check referrer URL (if user came from Chinese page)
+    if (document.referrer.includes('/zh/') || document.referrer.includes('lang=zh')) {
+        return true;
+    }
+    
+    // Method 6: Check for Chinese characters in page title or headers
+    var pageTitle = document.title;
+    if (/[\u4e00-\u9fff]/.test(pageTitle)) {
+        return true;
+    }
+    
+    // Method 7: Check localStorage/sessionStorage for language preference
+    if (localStorage.getItem('preferred_language') === 'zh' || 
+        sessionStorage.getItem('current_language') === 'zh') {
+        return true;
+    }
+    
+    return false;
+}
+
+// Apply translations when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Debug information
+    console.log('=== Chinese Language Detection Debug ===');
+    console.log('Current URL:', window.location.href);
+    console.log('Referrer URL:', document.referrer);
+    console.log('HTML Lang:', document.documentElement.lang);
+    console.log('Page Title:', document.title);
+    
+    var isChineseDetected = isChineseLanguageDetected();
+    console.log('Chinese Language Detected:', isChineseDetected);
+    
+    if (isChineseDetected) {
+        // Apply Chinese translations
+        var translations = {
+            'Donation Summary': '捐款摘要',
+            'Monthly Donation': '每月捐款',
+            'One time Donation': '一次性捐款', 
+            'Change Amount?': '更改金額？',
+            'Card & Billing': '信用卡及帳單資料',
+            'Billing Address': '帳單地址',
+            'Additional Details': '額外詳細資料',
+            'Country': '國家',
+            'Address Line 1': '地址第一行',
+            'Address Line 2': '地址第二行',
+            'Town/City': '城市',
+            'District': '地區',
+            'First Name': '名',
+            'Last Name': '姓',
+            'Email Address': '電郵地址',
+            'Phone Number': '電話號碼',
+            'Company/Organisation': '公司/機構',
+            'Sign up for our Newsletter': '訂閱我們的電子報',
+            'I agree to the': '我同意',
+            'Terms & Conditions': '條款及細則',
+            'Continue to Payment': '繼續付款'
+        };
+        
+        // Apply translations to specific elements with more targeted approach
+        
+        // Left sidebar translations
+        var donationSummary = document.querySelector('.leftChangeAmount h6');
+        if (donationSummary && donationSummary.textContent.includes('Donation Summary')) {
+            donationSummary.textContent = '捐款摘要';
+        }
+        
+        var donationType = document.querySelector('.psyemDonationType');
+        if (donationType) {
+            if (donationType.textContent.includes('Monthly')) {
+                donationType.innerHTML = donationType.innerHTML.replace('Monthly', '每月');
+            }
+            if (donationType.textContent.includes('One time')) {
+                donationType.innerHTML = donationType.innerHTML.replace('One time', '一次性');
+            }
+            if (donationType.textContent.includes('Donation')) {
+                donationType.innerHTML = donationType.innerHTML.replace('Donation', '捐款');
+            }
+        }
+        
+        var changeAmount = document.querySelector('.leftChangeAmount a');
+        if (changeAmount && changeAmount.textContent.includes('Change Amount?')) {
+            changeAmount.textContent = '更改金額？';
+        }
+        
+        // Main form translations
+        var cardBilling = document.querySelector('.cardBillingDetail h1');
+        if (cardBilling && cardBilling.textContent.includes('Card & Billing')) {
+            cardBilling.textContent = '信用卡及帳單資料';
+        }
+        
+        // Section headers
+        var billingAddress = document.querySelector('h5');
+        if (billingAddress && billingAddress.textContent.includes('Billing Address')) {
+            billingAddress.textContent = '帳單地址';
+        }
+        
+        var additionalDetails = document.querySelectorAll('h5');
+        additionalDetails.forEach(function(header) {
+            if (header.textContent.includes('Additional Details')) {
+                header.textContent = '額外詳細資料';
+            }
+        });
+        
+        // Form labels
+        var labels = document.querySelectorAll('label');
+        labels.forEach(function(label) {
+            var text = label.textContent;
+            Object.keys(translations).forEach(function(english) {
+                if (text.includes(english) && !text.includes(translations[english])) {
+                    label.innerHTML = label.innerHTML.replace(english, translations[english]);
+                }
+            });
+        });
+        
+                 // Newsletter and Terms & Conditions
+         var newsletterSpan = document.querySelectorAll('.newsletter-agree_wrapper span');
+         newsletterSpan.forEach(function(span) {
+             if (span.textContent.includes('Sign up for our Newsletter')) {
+                 span.textContent = '訂閱我們的電子報';
+             }
+             if (span.textContent.includes('I agree to the')) {
+                 span.innerHTML = span.innerHTML.replace('I agree to the', '我同意');
+             }
+         });
+         
+         var termsLink = document.querySelectorAll('.newsletter-agree_wrapper a');
+         termsLink.forEach(function(link) {
+             if (link.textContent.includes('Terms & Conditions')) {
+                 link.textContent = '條款及細則';
+             }
+         });
+         
+                  // Buttons and links
+         var continueBtn = document.querySelector('#psyemContinuePaymentBtn');
+         if (continueBtn && continueBtn.textContent.includes('Continue to Payment')) {
+             continueBtn.innerHTML = continueBtn.innerHTML.replace('Continue to Payment', '繼續付款');
+         }
+         
+         // Header Navigation Translations
+         var headerTranslations = {
+             'About Us': '關於我們',
+             'Programmes': '項目',
+             'Events': '活動', 
+             'News': '新聞',
+             'Knowledge Hub': '知識中心',
+             'Get Involved': '參與',
+             'Donate': ': 捐款'
+         };
+         
+         // More comprehensive selectors for navigation
+         var navSelectors = [
+             'nav a', '.nav a', 'header a', '.navigation a', '.menu a',
+             '.navbar a', '.main-menu a', '.site-navigation a', 
+             '.primary-menu a', '.header-menu a', '#menu a',
+             '.top-menu a', '.main-navigation a'
+         ];
+         
+         navSelectors.forEach(function(selector) {
+             var links = document.querySelectorAll(selector);
+             links.forEach(function(link) {
+                 var text = link.textContent.trim();
+                 if (headerTranslations[text]) {
+                     link.textContent = headerTranslations[text];
+                 }
+             });
+         });
+         
+         // Footer Translations - More aggressive approach
+         var footerTranslations = {
+             'GET IN TOUCH': '聯絡我們',
+             'Get In Touch': '聯絡我們',
+             'TERMS & CONDITIONS': '條款及細則',
+             'Terms & Conditions': '條款及細則',
+             'SIGN UP TO THE NEWSLETTER': '登記接收電子通訊',
+             'Sign Up to the Newsletter': '登記接收電子通訊',
+             'PRIVACY POLICY': '私隱聲明',
+             'Privacy Policy': '私隱聲明'
+         };
+         
+         // Much more comprehensive footer search - search ALL links in page
+         var allLinks = document.querySelectorAll('a');
+         allLinks.forEach(function(link) {
+             var text = link.textContent.trim();
+             if (footerTranslations[text]) {
+                 link.textContent = footerTranslations[text];
+                 console.log('Footer link translated:', text, '→', footerTranslations[text]);
+             }
+         });
+         
+         // Also search for text nodes that might not be in links
+         var allElements = document.querySelectorAll('*');
+         allElements.forEach(function(element) {
+             var text = element.textContent.trim();
+             // Only translate if this is a leaf node (no child elements with text)
+             if (element.children.length === 0 && footerTranslations[text]) {
+                 element.textContent = footerTranslations[text];
+                 console.log('Footer text translated:', text, '→', footerTranslations[text]);
+             }
+         });
+         
+                  console.log('Chinese translations applied via JavaScript');
+     }
+     
+     // Also apply translations after a short delay to catch any dynamically loaded content
+     setTimeout(function() {
+         if (isChineseLanguageDetected()) {
+             console.log('Re-applying translations after delay...');
+             
+             // Re-apply header translations
+             var headerTranslations = {
+                 'About Us': '關於我們',
+                 'Programmes': '項目',
+                 'Events': '活動', 
+                 'News': '新聞',
+                 'Knowledge Hub': '知識中心',
+                 'Get Involved': '參與',
+                 'Donate': '捐款'
+             };
+             
+             var navSelectors = [
+                 'nav a', '.nav a', 'header a', '.navigation a', '.menu a',
+                 '.navbar a', '.main-menu a', '.site-navigation a', 
+                 '.primary-menu a', '.header-menu a', '#menu a',
+                 '.top-menu a', '.main-navigation a'
+             ];
+             
+             navSelectors.forEach(function(selector) {
+                 var links = document.querySelectorAll(selector);
+                 links.forEach(function(link) {
+                     var text = link.textContent.trim();
+                     if (headerTranslations[text]) {
+                         link.textContent = headerTranslations[text];
+                     }
+                 });
+             });
+             
+             // Re-apply footer translations with aggressive approach
+             var footerTranslations = {
+                 'GET IN TOUCH': '聯絡我們',
+                 'Get In Touch': '聯絡我們',
+                 'TERMS & CONDITIONS': '條款及細則',
+                 'Terms & Conditions': '條款及細則',
+                 'SIGN UP TO THE NEWSLETTER': '登記接收電子通訊',
+                 'Sign Up to the Newsletter': '登記接收電子通訊',
+                 'PRIVACY POLICY': '私隱聲明',
+                 'Privacy Policy': '私隱聲明'
+             };
+             
+             // Search ALL links again
+             var allLinks = document.querySelectorAll('a');
+             allLinks.forEach(function(link) {
+                 var text = link.textContent.trim();
+                 if (footerTranslations[text]) {
+                     link.textContent = footerTranslations[text];
+                     console.log('Delayed footer link translated:', text, '→', footerTranslations[text]);
+                 }
+             });
+             
+             // Search all elements again
+             var allElements = document.querySelectorAll('*');
+             allElements.forEach(function(element) {
+                 var text = element.textContent.trim();
+                 if (element.children.length === 0 && footerTranslations[text]) {
+                     element.textContent = footerTranslations[text];
+                     console.log('Delayed footer text translated:', text, '→', footerTranslations[text]);
+                 }
+             });
+             
+             console.log('Header/Footer translations re-applied after delay');
+         }
+     }, 1000);
+ });
+ </script>
+
 <?php
 $sessKey       = 'donation_cart';
 $donationCart  = (isset($_SESSION[$sessKey])) ? $_SESSION[$sessKey] :  [];

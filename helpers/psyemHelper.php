@@ -964,17 +964,7 @@ function psyem_GetAllEventsForOrder($params = array())
 			'compare' => '!='
 		),
 		array(
-			'key'     => 'psyem_event_starttime',
-			'value'   => '',
-			'compare' => '!='
-		),
-		array(
 			'key'     => 'psyem_event_enddate',
-			'value'   => '',
-			'compare' => '!='
-		),
-		array(
-			'key'     => 'psyem_event_endtime',
 			'value'   => '',
 			'compare' => '!='
 		),
