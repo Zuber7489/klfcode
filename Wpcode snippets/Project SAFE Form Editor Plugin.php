@@ -337,6 +337,84 @@ class PsyemProjectSafeFormEditor {
             background: #f9f9f9;
         }
         
+        /* Specific field type previews */
+        .radio-field-preview input[type="radio"],
+        .checkbox-field-preview input[type="checkbox"] {
+            width: auto !important;
+            padding: 0 !important;
+            margin-right: 8px !important;
+            background: transparent !important;
+            accent-color: #0073aa;
+        }
+        
+        .radio-field-preview label,
+        .checkbox-field-preview label {
+            display: block !important;
+            margin-bottom: 8px !important;
+            cursor: pointer !important;
+            padding: 5px !important;
+            background: none !important;
+            border: none !important;
+            width: auto !important;
+        }
+        
+        .radio-field-preview label:hover,
+        .checkbox-field-preview label:hover {
+            background: #f0f0f0 !important;
+            border-radius: 4px;
+        }
+        
+        .select-field-preview select {
+            appearance: none !important;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>') !important;
+            background-repeat: no-repeat !important;
+            background-position: right 12px center !important;
+            background-size: 12px !important;
+            background-color: #fff !important;
+        }
+        
+        /* Remove any conflicting styles */
+        .psyem-field-preview input[type="radio"],
+        .psyem-field-preview input[type="checkbox"] {
+            appearance: auto !important;
+            -webkit-appearance: auto !important;
+        }
+        
+        /* Consistent field preview styling */
+        .text-field-preview,
+        .textarea-field-preview,
+        .date-field-preview,
+        .default-field-preview {
+            margin-bottom: 5px;
+        }
+        
+        .text-field-preview input,
+        .textarea-field-preview textarea,
+        .date-field-preview input,
+        .default-field-preview input {
+            transition: border-color 0.3s ease;
+        }
+        
+        .text-field-preview input:focus,
+        .textarea-field-preview textarea:focus,
+        .date-field-preview input:focus,
+        .default-field-preview input:focus {
+            border-color: #0073aa !important;
+            outline: none !important;
+            box-shadow: 0 0 0 1px #0073aa !important;
+        }
+        
+        /* Field preview containers */
+        .radio-field-preview,
+        .checkbox-field-preview {
+            border: 1px solid #e0e0e0;
+            margin-bottom: 5px;
+        }
+        
+        .select-field-preview {
+            margin-bottom: 5px;
+        }
+        
         .psyem-field-preview label {
             display: block;
             margin-bottom: 5px;
@@ -481,6 +559,7 @@ class PsyemProjectSafeFormEditor {
         .ui-sortable-helper {
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             transform: rotate(2deg);
+            z-index: 999;
         }
         
         .ui-sortable-placeholder {
@@ -488,6 +567,22 @@ class PsyemProjectSafeFormEditor {
             border: 2px dashed #0073aa;
             border-radius: 4px;
             height: 60px;
+            margin-bottom: 15px;
+        }
+        
+        .psyem-form-field.dragging {
+            opacity: 0.8;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: scale(1.02);
+            transition: all 0.2s ease;
+        }
+        
+        .info-message {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 10px 15px;
+            border-radius: 4px;
             margin-bottom: 15px;
         }
         
@@ -542,7 +637,20 @@ class PsyemProjectSafeFormEditor {
                             handle: '.field-handle',
                             placeholder: 'ui-sortable-placeholder',
                             connectWith: '.psyem-form-fields',
+                            tolerance: 'pointer',
+                            cursor: 'move',
+                            opacity: 0.8,
+                            start: function(event, ui) {
+                                // Visual feedback when drag starts
+                                ui.item.addClass('dragging');
+                                formEditor.showMessage('Reordering field... Drop to save new position.', 'info');
+                            },
+                            stop: function(event, ui) {
+                                // Remove dragging class
+                                ui.item.removeClass('dragging');
+                            },
                             update: function(event, ui) {
+                                // Field order changed
                                 formEditor.updateFieldPositions();
                             }
                         });
@@ -726,7 +834,7 @@ class PsyemProjectSafeFormEditor {
                         label: this.getDefaultLabel(fieldType),
                         placeholder: 'Enter ' + fieldType,
                         description: '',
-                        required: false,
+                        required: false, // Always false since we removed required option
                         options: []
                     };
                     
@@ -750,7 +858,7 @@ class PsyemProjectSafeFormEditor {
                 },
                 
                 generateFieldHtml: function(fieldData) {
-                    var requiredIndicator = fieldData.required ? '<span class="required-indicator">*</span>' : '';
+                    // No required indicator since we removed required field functionality
                     var fieldPreview = this.generateFieldPreview(fieldData);
                     
                     return '<div class="psyem-form-field" data-field-type="' + fieldData.type + '">' +
@@ -758,7 +866,6 @@ class PsyemProjectSafeFormEditor {
                         '<span class="dashicons dashicons-move field-handle"></span>' +
                         '<span class="field-label">' + fieldData.label + '</span>' +
                         '<div class="field-actions">' +
-                        requiredIndicator +
                         '<button type="button" class="button button-small edit-field">Edit</button>' +
                         '<button type="button" class="button button-small duplicate-field">Duplicate</button>' +
                         '<button type="button" class="button button-small delete-field">Delete</button>' +
@@ -821,7 +928,6 @@ class PsyemProjectSafeFormEditor {
                     $('#field_label').val(fieldData.label);
                     $('#field_placeholder').val(fieldData.placeholder);
                     $('#field_description').val(fieldData.description);
-                    $('#field_required').prop('checked', fieldData.required);
                     
                     // Handle field options
                     if (['select', 'radio', 'checkbox'].includes(fieldData.type)) {
@@ -869,7 +975,7 @@ class PsyemProjectSafeFormEditor {
                     fieldData.label = $('#field_label').val();
                     fieldData.placeholder = $('#field_placeholder').val();
                     fieldData.description = $('#field_description').val();
-                    fieldData.required = $('#field_required').is(':checked');
+                    fieldData.required = false; // Set to false since we removed the required option
                     
                     // Update options
                     var options = [];
@@ -886,11 +992,9 @@ class PsyemProjectSafeFormEditor {
                     this.currentEditingField.find('.field-label').text(fieldData.label);
                     this.currentEditingField.find('.field-data').val(JSON.stringify(fieldData));
                     
-                    // Update required indicator
+                    // Remove any required indicators since we don't support required fields anymore
                     var requiredIndicator = this.currentEditingField.find('.required-indicator');
-                    if (fieldData.required && requiredIndicator.length === 0) {
-                        this.currentEditingField.find('.field-actions').prepend('<span class="required-indicator">*</span>');
-                    } else if (!fieldData.required && requiredIndicator.length > 0) {
+                    if (requiredIndicator.length > 0) {
                         requiredIndicator.remove();
                     }
                     
@@ -1019,7 +1123,14 @@ class PsyemProjectSafeFormEditor {
                 },
                 
                 showMessage: function(message, type) {
-                    var messageClass = type === 'success' ? 'success-message' : 'error-message';
+                    type = type || 'success'; // Default to success
+                    var messageClassMap = {
+                        'success': 'success-message',
+                        'error': 'error-message',
+                        'info': 'info-message'
+                    };
+                    
+                    var messageClass = messageClassMap[type] || 'success-message';
                     var messageHtml = '<div class="' + messageClass + '">' + message + '</div>';
                     
                     // Try to use the dedicated messages container first
@@ -1031,22 +1142,30 @@ class PsyemProjectSafeFormEditor {
                         $('.psyem-form-editor-container').prepend(messageHtml);
                     }
                     
-                    // Auto-hide after 4 seconds
+                    // Auto-hide after different times based on type
+                    var autoHideTime = type === 'info' ? 2000 : 4000;
                     setTimeout(function() {
                         $('.' + messageClass).fadeOut(function() {
                             $(this).remove();
                         });
-                    }, 4000);
+                    }, autoHideTime);
                     
-                    // Scroll to top to show message
-                    $('html, body').animate({
-                        scrollTop: 0
-                    }, 300);
+                    // Only scroll to top for error/success messages, not info
+                    if (type !== 'info') {
+                        $('html, body').animate({
+                            scrollTop: 0
+                        }, 300);
+                    }
                 },
                 
                 updateFieldPositions: function() {
-                    // This method can be used to track field position changes
-                    console.log('Field positions updated');
+                    // This method tracks field position changes and automatically saves them
+                    console.log('Field positions updated - auto-saving...');
+                    
+                    // Auto-save form configuration when fields are reordered
+                    setTimeout(function() {
+                        formEditor.saveFormConfig();
+                    }, 500); // Small delay to allow UI to settle
                 },
                 
                 escapeHtml: function(text) {
@@ -1216,13 +1335,6 @@ class PsyemProjectSafeFormEditor {
                         <textarea id="field_description" name="field_description" class="widefat" rows="2"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="field_required" name="field_required" value="1" />
-                            <?php _e('Required Field', 'psyeventsmanager'); ?>
-                        </label>
-                    </div>
-                    
                     <div class="form-group field-options-group" style="display: none;">
                         <label><?php _e('Field Options (for dropdown, radio, checkbox fields)', 'psyeventsmanager'); ?></label>
                         <div id="field_options_container">
@@ -1344,9 +1456,6 @@ class PsyemProjectSafeFormEditor {
                 <span class="dashicons dashicons-move field-handle"></span>
                 <span class="field-label"><?php echo esc_html($field['label']); ?></span>
                 <div class="field-actions">
-                    <?php if ($field['required']): ?>
-                        <span class="required-indicator">*</span>
-                    <?php endif; ?>
                     <button type="button" class="button button-small edit-field">
                         <?php _e('Edit', 'psyeventsmanager'); ?>
                     </button>
@@ -1384,15 +1493,20 @@ class PsyemProjectSafeFormEditor {
             case 'email':
             case 'tel':
             case 'number':
-                echo '<input type="' . esc_attr($field_type) . '" placeholder="' . esc_attr($field_placeholder) . '" disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />';
+                echo '<div class="text-field-preview">';
+                echo '<input type="' . esc_attr($field_type) . '" placeholder="' . esc_attr($field_placeholder) . '" disabled style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; background: #fff; box-sizing: border-box;" />';
+                echo '</div>';
                 break;
                 
             case 'textarea':
-                echo '<textarea placeholder="' . esc_attr($field_placeholder) . '" disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px; resize: vertical;"></textarea>';
+                echo '<div class="textarea-field-preview">';
+                echo '<textarea placeholder="' . esc_attr($field_placeholder) . '" disabled style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px; resize: vertical; font-size: 14px; background: #fff; box-sizing: border-box; font-family: inherit;"></textarea>';
+                echo '</div>';
                 break;
                 
             case 'select':
-                echo '<select disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">';
+                echo '<div class="select-field-preview">';
+                echo '<select disabled style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; background: #fff; font-size: 14px; appearance: none; background-image: url(\'data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 4 5\"><path fill=\"%23666\" d=\"M2 0L0 2h4zm0 5L0 3h4z\"/></svg>\'); background-repeat: no-repeat; background-position: right 12px center; background-size: 12px;">';
                 echo '<option value="">' . esc_html($field_placeholder) . '</option>';
                 
                 if (!empty($field_options)) {
@@ -1409,16 +1523,34 @@ class PsyemProjectSafeFormEditor {
                     echo '<option value="option2">Sample Option 2</option>';
                 }
                 echo '</select>';
+                echo '</div>';
                 break;
                 
             case 'checkbox':
-                echo '<label style="display: inline-flex; align-items: center; gap: 8px;">';
-                echo '<input type="checkbox" disabled /> ';
-                echo '<span>' . esc_html($field_label) . '</span>';
-                echo '</label>';
+                echo '<div class="checkbox-field-preview" style="padding: 10px; background: #f9f9f9; border-radius: 4px;">';
+                if (!empty($field_options)) {
+                    foreach ($field_options as $option) {
+                        $option_value = isset($option['value']) ? $option['value'] : '';
+                        $option_label = isset($option['label']) ? $option['label'] : '';
+                        
+                        if (!empty($option_label)) {
+                            echo '<label style="display: block; margin-bottom: 8px; cursor: pointer; padding: 5px;">';
+                            echo '<input type="checkbox" value="' . esc_attr($option_value) . '" disabled style="margin-right: 8px; accent-color: #0073aa;" /> ';
+                            echo '<span style="font-size: 14px;">' . esc_html($option_label) . '</span>';
+                            echo '</label>';
+                        }
+                    }
+                } else {
+                    echo '<label style="display: block; margin-bottom: 8px; cursor: pointer; padding: 5px;">';
+                    echo '<input type="checkbox" disabled style="margin-right: 8px; accent-color: #0073aa;" /> ';
+                    echo '<span style="font-size: 14px;">' . esc_html($field_label) . '</span>';
+                    echo '</label>';
+                }
+                echo '</div>';
                 break;
                 
             case 'radio':
+                echo '<div class="radio-field-preview" style="padding: 10px; background: #f9f9f9; border-radius: 4px;">';
                 if (!empty($field_options)) {
                     $radio_name = 'preview_radio_' . uniqid();
                     foreach ($field_options as $option) {
@@ -1426,24 +1558,33 @@ class PsyemProjectSafeFormEditor {
                         $option_label = isset($option['label']) ? $option['label'] : '';
                         
                         if (!empty($option_label)) {
-                            echo '<label style="display: block; margin-bottom: 5px;">';
-                            echo '<input type="radio" name="' . esc_attr($radio_name) . '" value="' . esc_attr($option_value) . '" disabled /> ';
-                            echo esc_html($option_label);
+                            echo '<label style="display: block; margin-bottom: 8px; cursor: pointer; padding: 5px;">';
+                            echo '<input type="radio" name="' . esc_attr($radio_name) . '" value="' . esc_attr($option_value) . '" disabled style="margin-right: 8px; accent-color: #0073aa;" /> ';
+                            echo '<span style="font-size: 14px;">' . esc_html($option_label) . '</span>';
                             echo '</label>';
                         }
                     }
                 } else {
-                    echo '<label style="display: block;"><input type="radio" disabled /> Sample Option 1</label>';
-                    echo '<label style="display: block;"><input type="radio" disabled /> Sample Option 2</label>';
+                    echo '<label style="display: block; margin-bottom: 8px; cursor: pointer; padding: 5px;">';
+                    echo '<input type="radio" disabled style="margin-right: 8px; accent-color: #0073aa;" /> ';
+                    echo '<span style="font-size: 14px;">Sample Option 1</span></label>';
+                    echo '<label style="display: block; margin-bottom: 8px; cursor: pointer; padding: 5px;">';
+                    echo '<input type="radio" disabled style="margin-right: 8px; accent-color: #0073aa;" /> ';
+                    echo '<span style="font-size: 14px;">Sample Option 2</span></label>';
                 }
+                echo '</div>';
                 break;
                 
             case 'date':
-                echo '<input type="date" disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />';
+                echo '<div class="date-field-preview">';
+                echo '<input type="date" disabled style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; background: #fff; box-sizing: border-box;" />';
+                echo '</div>';
                 break;
                 
             default:
-                echo '<input type="text" placeholder="' . esc_attr($field_placeholder) . '" disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />';
+                echo '<div class="default-field-preview">';
+                echo '<input type="text" placeholder="' . esc_attr($field_placeholder) . '" disabled style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; background: #fff; box-sizing: border-box;" />';
+                echo '</div>';
                 break;
         }
         

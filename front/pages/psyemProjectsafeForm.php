@@ -1,4 +1,324 @@
-<?php ob_start(); ?>
+<?php 
+// Get dynamic form configuration
+$form_config = get_option('psyem_project_safe_form_config', array());
+
+// Function to get dynamic field label
+function psyem_get_dynamic_field_label($field_name, $default_label, $form_config) {
+    if (empty($form_config['steps'])) {
+        return __($default_label, 'psyeventsmanager');
+    }
+    
+    foreach ($form_config['steps'] as $step) {
+        if (!empty($step['fields'])) {
+            foreach ($step['fields'] as $field) {
+                if (isset($field['name']) && $field['name'] === $field_name) {
+                    return !empty($field['label']) ? $field['label'] : __($default_label, 'psyeventsmanager');
+                }
+            }
+        }
+    }
+    
+    return __($default_label, 'psyeventsmanager');
+}
+
+// Function to get dynamic field placeholder
+function psyem_get_dynamic_field_placeholder($field_name, $default_placeholder, $form_config) {
+    if (empty($form_config['steps'])) {
+        return __($default_placeholder, 'psyeventsmanager');
+    }
+    
+    foreach ($form_config['steps'] as $step) {
+        if (!empty($step['fields'])) {
+            foreach ($step['fields'] as $field) {
+                if (isset($field['name']) && $field['name'] === $field_name) {
+                    return !empty($field['placeholder']) ? $field['placeholder'] : __($default_placeholder, 'psyeventsmanager');
+                }
+            }
+        }
+    }
+    
+    return __($default_placeholder, 'psyeventsmanager');
+}
+
+// Function to check if we should use dynamic form rendering
+function psyem_should_use_dynamic_form($form_config) {
+    // Use dynamic if we have form config and it's properly structured
+    return !empty($form_config) && !empty($form_config['steps']) && is_array($form_config['steps']);
+}
+
+// Function to render dynamic form
+function psyem_render_dynamic_form($form_config, $projectsafe_type = 'project-safe') {
+    if (!psyem_should_use_dynamic_form($form_config)) {
+        return false; // Fallback to hardcoded form
+    }
+    
+    ob_start();
+    ?>
+    <div id="content-area" class="text-start psyemProjectSafeCont" style="display: none;">
+        <div class="region region-content">
+            <article class="node node-project-teal-form node-project-teal node-teal-form">
+                <div class="node-inner">
+                    <div class="teal__container teal__container--form">
+                        <header class="node-teal-form__header">
+                            <h1 class="node-teal-form__title">
+                                <?= !empty($form_config['settings']['title']) ? esc_html($form_config['settings']['title']) : __('Register For Project SAFE', 'psyeventsmanager') ?>
+                            </h1>
+                            <div class="node-teal-form__body">
+                                <p>
+                                    <?= !empty($form_config['settings']['description']) ? esc_html($form_config['settings']['description']) : __('Two simple steps to register', 'psyeventsmanager') ?>
+                                </p>
+                            </div>
+                        </header>
+
+                        <form class="teal-form mb-0 hideThankyouCont">
+                            <ul class="teal-form__steps">
+                                <?php foreach ($form_config['steps'] as $step_index => $step): ?>
+                                    <li data-step="<?= $step_index + 1 ?>" class="<?= $step_index === 0 ? 'active' : '' ?>">
+                                        <span>
+                                            <?= ($step_index + 1) . '. ' . esc_html($step['title']) ?>
+                                        </span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </form>
+
+                        <?php foreach ($form_config['steps'] as $step_index => $step): ?>
+                            <div data-step="<?= $step_index + 1 ?>" class="teal-form__content <?= $step_index === 0 ? 'active' : '' ?> <?= $step_index === 0 ? 'one1' : 'two2' ?> hideThankyouCont">
+                                <form class="teal-form mt-0" id="psyem<?= $step_index === 0 ? 'First' : 'Second' ?>StepForm">
+                                    <div class="teal-form__content-inner">
+                                        <?php if ($step_index === 0): ?>
+                                            <p class="teal-form__intro">
+                                                <input type="hidden" name="field_projectsafe_type" value="<?= esc_attr($projectsafe_type) ?>" />
+                                                <?= __('Please fill in the following information if you would like join the project. <br>All personal details will be kept strictly confidential', 'psyeventsmanager') ?>
+                                                <br>
+                                                <span class="req-fields-info text-danger">
+                                                    * <?= __('Required field', 'psyeventsmanager') ?>
+                                                </span>
+                                            </p>
+                                        <?php else: ?>
+                                            <p class="teal-form__intro">
+                                                <?= __('Step 2: Please provide your contact information', 'psyeventsmanager') ?>
+                                                <br>
+                                                <span class="req-fields-info text-danger">
+                                                    * <?= __('Required field', 'psyeventsmanager') ?>
+                                                </span>
+                                            </p>
+                                        <?php endif; ?>
+                                        
+                                        <div class="form-teal__fields">
+                                            <?php 
+                                            // Render fields in the order they appear in form config
+                                            psyem_render_dynamic_step_fields($step['fields']); 
+                                            ?>
+                                        </div>
+                                        
+                                        <?php if ($step_index === 0): ?>
+                                            <div class="form-item">
+                                                <button type="button" class="btn-teal" id="psyemGoToSecondStep">
+                                                    <?= __('Next', 'psyeventsmanager') ?>
+                                                </button>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="form-item">
+                                                <button type="button" class="btn-teal-secondary" id="psyemGoToFirstStep">
+                                                    <?= __('Back', 'psyeventsmanager') ?>
+                                                </button>
+                                                <button type="submit" class="btn-teal" id="psyemRegisterProjectSafe">
+                                                    <?= __('Submit', 'psyeventsmanager') ?>
+                                                </button>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </form>
+                            </div>
+                        <?php endforeach; ?>
+                        
+                        <!-- Thank you message -->
+                        <div class="teal-form__content thankyou showThankyouCont" style="display: none;">
+                            <div class="teal-form__content-inner">
+                                <h2><?= __('Thank you!', 'psyeventsmanager') ?></h2>
+                                <p><?= !empty($form_config['settings']['success_message']) ? esc_html($form_config['settings']['success_message']) : __('Thank you for your registration!', 'psyeventsmanager') ?></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
+    
+    <?php
+    return ob_get_clean();
+}
+
+// Function to render dynamic step fields
+function psyem_render_dynamic_step_fields($fields) {
+    foreach ($fields as $field) {
+        psyem_render_dynamic_field($field);
+    }
+}
+
+// Function to render individual dynamic field
+function psyem_render_dynamic_field($field) {
+    $field_name = $field['name'];
+    $field_type = $field['type'];
+    $field_label = $field['label'];
+    $field_placeholder = $field['placeholder'];
+    $field_options = isset($field['options']) ? $field['options'] : array();
+    $is_required = isset($field['required']) ? $field['required'] : false;
+    $required_attr = $is_required ? 'required' : '';
+    $required_star = $is_required ? '<span class="text-danger">*</span>' : '';
+    
+    switch ($field_type) {
+        case 'text':
+        case 'email':
+        case 'tel':
+            $input_type = $field_type === 'tel' ? 'text' : $field_type;
+            $css_class = $field_type === 'tel' ? 'strict_integer strict_phone strict_space' : '';
+            ?>
+            <div class="form-item form-item--text half">
+                <input id="<?= esc_attr($field_name) ?>" <?= $required_attr ?> type="<?= esc_attr($input_type) ?>" 
+                       name="<?= esc_attr($field_name) ?>" class="<?= esc_attr($css_class) ?>"
+                       placeholder="<?= esc_attr($field_placeholder) ?>" />
+                <label for="<?= esc_attr($field_name) ?>">
+                    <?= esc_html($field_label) ?><?= $required_star ?>
+                </label>
+            </div>
+            <?php
+            break;
+            
+        case 'select':
+            $css_class_map = array(
+                'field_dob_day' => 'third',
+                'field_dob_month' => 'third', 
+                'field_dob_year' => 'third'
+            );
+            $css_class = isset($css_class_map[$field_name]) ? $css_class_map[$field_name] : '';
+            ?>
+            <div class="form-item <?= esc_attr($css_class) ?>">
+                <select id="<?= esc_attr($field_name) ?>" <?= $required_attr ?> name="<?= esc_attr($field_name) ?>">
+                    <option value="">
+                        <?= esc_html($field_placeholder) ?><?= $required_star ?>
+                    </option>
+                    <?php
+                    // Handle special cases for date fields and regions
+                    if ($field_name === 'field_dob_day') {
+                        for ($i = 1; $i <= 31; $i++) {
+                            $value = sprintf('%02d', $i);
+                            echo '<option value="' . esc_attr($value) . '">' . $i . '</option>';
+                        }
+                    } elseif ($field_name === 'field_dob_month') {
+                        $months = array(
+                            '01' => __('January', 'psyeventsmanager'),
+                            '02' => __('February', 'psyeventsmanager'),
+                            '03' => __('March', 'psyeventsmanager'),
+                            '04' => __('April', 'psyeventsmanager'),
+                            '05' => __('May', 'psyeventsmanager'),
+                            '06' => __('June', 'psyeventsmanager'),
+                            '07' => __('July', 'psyeventsmanager'),
+                            '08' => __('August', 'psyeventsmanager'),
+                            '09' => __('September', 'psyeventsmanager'),
+                            '10' => __('October', 'psyeventsmanager'),
+                            '11' => __('November', 'psyeventsmanager'),
+                            '12' => __('December', 'psyeventsmanager'),
+                        );
+                        foreach ($months as $value => $label) {
+                            echo '<option value="' . esc_attr($value) . '">' . esc_html($label) . '</option>';
+                        }
+                    } elseif ($field_name === 'field_dob_year') {
+                        if (function_exists('psyem_GetPreviousYearsFromYear')) {
+                            foreach (psyem_GetPreviousYearsFromYear((date("Y") - 17)) as $year) {
+                                echo '<option value="' . esc_attr($year) . '">' . esc_html($year) . '</option>';
+                            }
+                        } else {
+                            // Fallback years
+                            for ($year = date("Y") - 17; $year >= date("Y") - 60; $year--) {
+                                echo '<option value="' . esc_attr($year) . '">' . esc_html($year) . '</option>';
+                            }
+                        }
+                    } elseif ($field_name === 'field_region') {
+                        if (function_exists('psyem_GetAllRegions')) {
+                            foreach (psyem_GetAllRegions() as $region) {
+                                echo '<option value="' . esc_attr($region) . '">' . esc_html(__($region, 'psyeventsmanager')) . '</option>';
+                            }
+                        } else {
+                            // Fallback regions
+                            $regions = array('Hong Kong Island', 'Kowloon', 'New Territories');
+                            foreach ($regions as $region) {
+                                echo '<option value="' . esc_attr($region) . '">' . esc_html(__($region, 'psyeventsmanager')) . '</option>';
+                            }
+                        }
+                    } elseif ($field_name === 'field_district') {
+                        if (function_exists('psyem_GetAllDistricts')) {
+                            foreach (psyem_GetAllDistricts() as $district) {
+                                echo '<option value="' . esc_attr($district) . '">' . esc_html(__($district, 'psyeventsmanager')) . '</option>';
+                            }
+                        } else {
+                            // Fallback districts
+                            $districts = array(
+                                'Central and Western', 'Eastern', 'Southern', 'Wan Chai',
+                                'Sham Shui Po', 'Kowloon City', 'Kwun Tong', 'Wong Tai Sin', 'Yau Tsim Mong',
+                                'Islands', 'Kwai Tsing', 'North', 'Sai Kung', 'Sha Tin', 'Tai Po', 'Tsuen Wan', 'Tuen Mun', 'Yuen Long'
+                            );
+                            foreach ($districts as $district) {
+                                echo '<option value="' . esc_attr($district) . '">' . esc_html(__($district, 'psyeventsmanager')) . '</option>';
+                            }
+                        }
+                    } else {
+                        // Use field options from form config
+                        foreach ($field_options as $option) {
+                            $option_value = isset($option['value']) ? $option['value'] : '';
+                            $option_label = isset($option['label']) ? $option['label'] : '';
+                            if (!empty($option_value) && !empty($option_label)) {
+                                echo '<option value="' . esc_attr($option_value) . '">' . esc_html($option_label) . '</option>';
+                            }
+                        }
+                    }
+                    ?>
+                </select>
+                <label for="<?= esc_attr($field_name) ?>">
+                    <?= esc_html($field_label) ?><?= $required_star ?>
+                </label>
+            </div>
+            <?php
+            break;
+            
+        case 'textarea':
+            ?>
+            <div class="form-item">
+                <textarea id="<?= esc_attr($field_name) ?>" <?= $required_attr ?> name="<?= esc_attr($field_name) ?>"
+                          placeholder="<?= esc_attr($field_placeholder) ?>"></textarea>
+                <label for="<?= esc_attr($field_name) ?>">
+                    <?= esc_html($field_label) ?><?= $required_star ?>
+                </label>
+            </div>
+            <?php
+            break;
+            
+        default:
+            // Default to text input
+            ?>
+            <div class="form-item">
+                <input id="<?= esc_attr($field_name) ?>" <?= $required_attr ?> type="text" 
+                       name="<?= esc_attr($field_name) ?>"
+                       placeholder="<?= esc_attr($field_placeholder) ?>" />
+                <label for="<?= esc_attr($field_name) ?>">
+                    <?= esc_html($field_label) ?><?= $required_star ?>
+                </label>
+            </div>
+            <?php
+            break;
+    }
+}
+
+// Check if we should use dynamic form
+if (psyem_should_use_dynamic_form($form_config)) {
+    // Render dynamic form and return early
+    echo psyem_render_dynamic_form($form_config, $projectsafe_type ?? 'project-safe');
+    return;
+}
+
+// If dynamic form is not available, fall back to hardcoded form below
+ob_start(); ?>
 <div id="content-area" class="text-start psyemProjectSafeCont" style="display: none;">
     <div class="region region-content">
         <article class="node node-project-teal-form node-project-teal node-teal-form">
@@ -6,11 +326,11 @@
                 <div class="teal__container teal__container--form">
                     <header class="node-teal-form__header">
                         <h1 class="node-teal-form__title">
-                            <?= __('Register For Project SAFE', 'psyeventsmanager') ?>
+                            <?= !empty($form_config['settings']['title']) ? esc_html($form_config['settings']['title']) : __('Register For Project SAFE', 'psyeventsmanager') ?>
                         </h1>
                         <div class="node-teal-form__body">
                             <p>
-                                <?= __('Two simple steps to register', 'psyeventsmanager') ?>
+                                <?= !empty($form_config['settings']['description']) ? esc_html($form_config['settings']['description']) : __('Two simple steps to register', 'psyeventsmanager') ?>
                             </p>
                         </div>
                     </header>
@@ -44,24 +364,24 @@
                                 <div class="form-teal__fields">
                                     <div class="form-item form-item--text half">
                                         <input id="field_first_name" required type="text" name="field_first_name"
-                                            placeholder="<?= __('First Name (Same with HKID)', 'psyeventsmanager') ?>" />
+                                            placeholder="<?= esc_attr(psyem_get_dynamic_field_placeholder('field_first_name', 'First Name (Same with HKID)', $form_config)) ?>" />
                                         <label for="field_first_name">
-                                            <?= __('First Name (Same with HKID)', 'psyeventsmanager') ?>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_first_name', 'First Name (Same with HKID)', $form_config)) ?>
                                             <span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item half">
                                         <input id="field_last_name" required type="text" name="field_last_name"
-                                            placeholder="<?= __('Last Name (Same with HKID)', 'psyeventsmanager') ?>" />
+                                            placeholder="<?= esc_attr(psyem_get_dynamic_field_placeholder('field_last_name', 'Last Name (Same with HKID)', $form_config)) ?>" />
                                         <label for="field_last_name">
-                                            <?= __('Last Name (Same with HKID)', 'psyeventsmanager') ?>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_last_name', 'Last Name (Same with HKID)', $form_config)) ?>
                                             <span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item">
                                         <select id="field_gender" required name="field_gender">
                                             <option value="">
-                                                <?= __('Gender', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_gender', 'Gender', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <option value="female">
                                                 <?= __('Female', 'psyeventsmanager') ?>
@@ -70,12 +390,12 @@
                                                 <?= __('Male', 'psyeventsmanager') ?>
                                             </option>
                                         </select>
-                                        <label for="field_gender">Gender<span class="text-danger">*</span></label>
+                                        <label for="field_gender"><?= esc_html(psyem_get_dynamic_field_label('field_gender', 'Gender', $form_config)) ?><span class="text-danger">*</span></label>
                                     </div>
                                     <div class="form-item third">
                                         <select required name="field_dob_day">
                                             <option value="">
-                                                <?= __('Day of Birth', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_dob_day', 'Day of Birth', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <option value="01">1</option>
                                             <option value="02">2</option>
@@ -110,13 +430,13 @@
                                             <option value="31">31</option>
                                         </select>
                                         <label for="field_dob_day">
-                                            <?= __('Day of Birth', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_dob_day', 'Day of Birth', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item third">
                                         <select required name="field_dob_month">
                                             <option value="">
-                                                <?= __('Month of Birth', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_dob_month', 'Month of Birth', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <option value="01"><?= __('January', 'psyeventsmanager') ?></option>
                                             <option value="02"><?= __('February', 'psyeventsmanager') ?></option>
@@ -132,26 +452,26 @@
                                             <option value="12"><?= __('December', 'psyeventsmanager') ?></option>
                                         </select>
                                         <label for="field_dob_month">
-                                            <?= __('Month of Birth', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_dob_month', 'Month of Birth', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item third">
                                         <select required name="field_dob_year">
                                             <option value="">
-                                                <?= __('Year of Birth', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_dob_year', 'Year of Birth', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <?php foreach (psyem_GetPreviousYearsFromYear((date("Y") - 17)) as $pyear) : ?>
                                                 <option value="<?= $pyear ?>"><?= $pyear ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                         <label for="field_dob_year">
-                                            <?= __('Year of Birth', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_dob_year', 'Year of Birth', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item">
                                         <select required name="field_sexual_experience">
                                             <option value="">
-                                                <?= __('Do you have any sexual experience?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_sexual_experience', 'Do you have any sexual experience?', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <option value="yes">
                                                 <?= __('Yes', 'psyeventsmanager') ?>
@@ -161,13 +481,13 @@
                                             </option>
                                         </select>
                                         <label for="field_sexual_experience">
-                                            <?= __('Do you have any sexual experience?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_sexual_experience', 'Do you have any sexual experience?', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item">
                                         <select required name="field_cervical_screening">
                                             <option value="">
-                                                <?= __('Have you ever had any cervical screening in the last 3 years?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_cervical_screening', 'Have you ever had any cervical screening in the last 3 years?', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <option value="yes">
                                                 <?= __('Yes', 'psyeventsmanager') ?>
@@ -177,13 +497,13 @@
                                             </option>
                                         </select>
                                         <label for="field_cervical_screening">
-                                            <?= __('Have you ever had any cervical screening in the last 3 years?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_cervical_screening', 'Have you ever had any cervical screening in the last 3 years?', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item">
                                         <select required name="field_undergoing_treatment">
                                             <option value="">
-                                                <?= __('Are you undergoing treatment for CIN or cervical cancer?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_undergoing_treatment', 'Are you undergoing treatment for CIN or cervical cancer?', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <option value="yes">
                                                 <?= __('Yes', 'psyeventsmanager') ?>
@@ -193,13 +513,13 @@
                                             </option>
                                         </select>
                                         <label for="field_undergoing_treatment">
-                                            <?= __('Are you undergoing treatment for CIN or cervical cancer?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_undergoing_treatment', 'Are you undergoing treatment for CIN or cervical cancer?', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item">
                                         <select required name="field_received_hpv">
                                             <option value="">
-                                                <?= __('Have you ever received HPV vaccine?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_received_hpv', 'Have you ever received HPV vaccine?', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <option value="yes">
                                                 <?= __('Yes', 'psyeventsmanager') ?>
@@ -209,13 +529,13 @@
                                             </option>
                                         </select>
                                         <label for="field_received_hpv">
-                                            <?= __('Have you ever received HPV vaccine?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_received_hpv', 'Have you ever received HPV vaccine?', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item">
                                         <select required name="field_pregnant">
                                             <option value="">
-                                                <?= __('Are you pregnant?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_pregnant', 'Are you pregnant?', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <option value="yes">
                                                 <?= __('Yes', 'psyeventsmanager') ?>
@@ -225,13 +545,13 @@
                                             </option>
                                         </select>
                                         <label for="field_pregnant">
-                                            <?= __('Are you pregnant?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_pregnant', 'Are you pregnant?', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item">
                                         <select required name="field_hysterectomy">
                                             <option value="">
-                                                <?= __('Did you have a hysterectomy?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_hysterectomy', 'Did you have a hysterectomy?', $form_config)) ?><span class="text-danger">*</span>
                                             </option>
                                             <option value="yes">
                                                 <?= __('Yes', 'psyeventsmanager') ?>
@@ -241,7 +561,7 @@
                                             </option>
                                         </select>
                                         <label for="field_hysterectomy">
-                                            <?= __('Did you have a hysterectomy?', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_hysterectomy', 'Did you have a hysterectomy?', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item teal-form__checkboxes">
@@ -344,15 +664,15 @@
                                 </p>
                                 <div class="form-teal__fields">
                                     <div class="form-item half">
-                                        <input id="field_phone" required type="text" name="field_phone" class="strict_integer strict_phone strict_space" placeholder="<?= __('Phone number', 'psyeventsmanager') ?>*" />
+                                        <input id="field_phone" required type="text" name="field_phone" class="strict_integer strict_phone strict_space" placeholder="<?= esc_attr(psyem_get_dynamic_field_placeholder('field_phone', 'Phone number', $form_config)) ?>" />
                                         <label for="field_phone">
-                                            <?= __('Phone number', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_phone', 'Phone number', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item half">
-                                        <input id="field_email" required type="email" name="field_email" placeholder="<?= __('Email Address', 'psyeventsmanager') ?>*" />
+                                        <input id="field_email" required type="email" name="field_email" placeholder="<?= esc_attr(psyem_get_dynamic_field_placeholder('field_email', 'Email Address', $form_config)) ?>" />
                                         <label for="field_email">
-                                            <?= __('Email Address', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_email', 'Email Address', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item half">
@@ -371,7 +691,7 @@
                                             </option>
                                         </select>
                                         <label for="field_region">
-                                            <?= __('Region', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_region', 'Region', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
 
@@ -437,14 +757,14 @@
                                             </option>
                                         </select>
                                         <label for="field_district">
-                                            <?= __('District', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_district', 'District', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
 
                                     <div class="form-item">
-                                        <input id="field_address" type="text" name="field_address" placeholder="<?= __('Address', 'psyeventsmanager') ?>" />
+                                        <input id="field_address" type="text" name="field_address" placeholder="<?= esc_attr(psyem_get_dynamic_field_placeholder('field_address', 'Address', $form_config)) ?>" />
                                         <label for="field_address">
-                                            <?= __('Address', 'psyeventsmanager') ?><span class="text-danger">*</span>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_address', 'Address', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                 </div>
@@ -474,7 +794,7 @@
                                             </option>
                                         </select>
                                         <label for="field_source">
-                                            <?= __('How have you heard about this study?', 'psyeventsmanager') ?>
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_source', 'How have you heard about this study?', $form_config)) ?>
                                         </label>
                                     </div>
                                 </div>
