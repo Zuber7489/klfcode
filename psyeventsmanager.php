@@ -115,13 +115,6 @@ class psyemEventsManager
 }
 /* EVENT MANAGER END */
 
-/* PROJECT SAFE FORM EDITOR BGN */
-// Load form editor only in admin
-if (is_admin()) {
-    require 'admin/psyemProjectSafeFormEditor.php';
-}
-/* PROJECT SAFE FORM EDITOR END */
-
 require 'admin/psyemAdmin.php';
 require 'front/psyemFront.php';
 $psyemEventsManager = new psyemEventsManager();
