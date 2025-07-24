@@ -31,6 +31,7 @@ class PsyemProjectSafeFormEditor {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('wp_ajax_psyem_save_form_config', array($this, 'ajax_save_form_config'));
         add_action('wp_ajax_psyem_reset_form_config', array($this, 'ajax_reset_form_config'));
+        add_action('wp_ajax_psyem_clear_form_config', array($this, 'ajax_clear_form_config'));
         add_action('wp_ajax_psyem_add_form_field', array($this, 'ajax_add_form_field'));
         add_action('wp_ajax_psyem_delete_form_field', array($this, 'ajax_delete_form_field'));
     }
@@ -529,45 +530,81 @@ class PsyemProjectSafeFormEditor {
                 },
                 
                 initSortable: function() {
-                    $('.psyem-form-fields').sortable({
-                        handle: '.field-handle',
-                        placeholder: 'ui-sortable-placeholder',
-                        connectWith: '.psyem-form-fields',
-                        update: function(event, ui) {
-                            formEditor.updateFieldPositions();
-                        }
-                    });
+                    // Check if jQuery UI sortable is available
+                    if (typeof $.fn.sortable === 'undefined') {
+                        console.warn('jQuery UI sortable not available');
+                        return;
+                    }
+                    
+                    try {
+                        $('.psyem-form-fields').sortable({
+                            handle: '.field-handle',
+                            placeholder: 'ui-sortable-placeholder',
+                            connectWith: '.psyem-form-fields',
+                            update: function(event, ui) {
+                                formEditor.updateFieldPositions();
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error initializing sortable:', error);
+                    }
                 },
                 
                 initDragDrop: function() {
-                    $('.psyem-field-type').draggable({
-                        helper: 'clone',
-                        connectToSortable: '.psyem-form-fields',
-                        stop: function(event, ui) {
-                            var fieldType = $(ui.helper).data('field-type');
-                            if (fieldType) {
-                                formEditor.addNewField(fieldType, ui.helper.closest('.psyem-form-fields'));
-                                $(ui.helper).remove();
+                    // Check if jQuery UI is available
+                    if (typeof $.fn.draggable === 'undefined' || typeof $.fn.droppable === 'undefined') {
+                        console.warn('jQuery UI draggable/droppable not available. Using click events instead.');
+                        this.initClickToAdd();
+                        return;
+                    }
+                    
+                    try {
+                        $('.psyem-field-type').draggable({
+                            helper: 'clone',
+                            connectToSortable: '.psyem-form-fields',
+                            stop: function(event, ui) {
+                                var fieldType = $(ui.helper).data('field-type');
+                                if (fieldType) {
+                                    formEditor.addNewField(fieldType, ui.helper.closest('.psyem-form-fields'));
+                                    $(ui.helper).remove();
+                                }
                             }
+                        });
+                        
+                        $('.psyem-drop-zone').droppable({
+                            accept: '.psyem-field-type',
+                            over: function(event, ui) {
+                                $(this).addClass('drag-over');
+                            },
+                            out: function(event, ui) {
+                                $(this).removeClass('drag-over');
+                            },
+                            drop: function(event, ui) {
+                                $(this).removeClass('drag-over');
+                                var fieldType = ui.draggable.data('field-type');
+                                if (fieldType) {
+                                    formEditor.addNewField(fieldType, $(this).siblings('.psyem-form-fields'));
+                                }
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error initializing drag and drop:', error);
+                        this.initClickToAdd();
+                    }
+                },
+                
+                initClickToAdd: function() {
+                    // Fallback: click to add fields
+                    $('.psyem-field-type').off('click').on('click', function() {
+                        var fieldType = $(this).data('field-type');
+                        var targetContainer = $('.psyem-form-fields').first();
+                        if (fieldType && targetContainer.length) {
+                            formEditor.addNewField(fieldType, targetContainer);
                         }
                     });
                     
-                    $('.psyem-drop-zone').droppable({
-                        accept: '.psyem-field-type',
-                        over: function(event, ui) {
-                            $(this).addClass('drag-over');
-                        },
-                        out: function(event, ui) {
-                            $(this).removeClass('drag-over');
-                        },
-                        drop: function(event, ui) {
-                            $(this).removeClass('drag-over');
-                            var fieldType = ui.draggable.data('field-type');
-                            if (fieldType) {
-                                formEditor.addNewField(fieldType, $(this).siblings('.psyem-form-fields'));
-                            }
-                        }
-                    });
+                    // Add visual indication
+                    $('.psyem-drop-zone').html('<p>Click on field types from the sidebar to add them here</p>');
                 },
                 
                 bindEvents: function() {
@@ -588,17 +625,30 @@ class PsyemProjectSafeFormEditor {
                         }
                     });
                     
+                    // Clear all configuration
+                    $(document).on('click', '#psyem-clear-config', function(e) {
+                        e.preventDefault();
+                        if (confirm('Are you sure you want to clear all form data and reset to default? This cannot be undone.')) {
+                            formEditor.clearFormConfig();
+                        }
+                    });
+                    
                     // Edit field
                     $(document).on('click', '.edit-field', function(e) {
                         e.preventDefault();
                         var fieldElement = $(this).closest('.psyem-form-field');
-                        formEditor.editField(fieldElement);
+                        if (fieldElement.length) {
+                            formEditor.editField(fieldElement);
+                        }
                     });
                     
                     // Delete field
                     $(document).on('click', '.delete-field', function(e) {
                         e.preventDefault();
-                        if (confirm('Are you sure you want to delete this field?')) {
+                        var confirmMessage = (typeof psyemFormEditor !== 'undefined' && psyemFormEditor.strings) 
+                            ? psyemFormEditor.strings.confirm_delete 
+                            : 'Are you sure you want to delete this field?';
+                        if (confirm(confirmMessage)) {
                             $(this).closest('.psyem-form-field').remove();
                         }
                     });
@@ -607,9 +657,17 @@ class PsyemProjectSafeFormEditor {
                     $(document).on('click', '.duplicate-field', function(e) {
                         e.preventDefault();
                         var fieldElement = $(this).closest('.psyem-form-field');
-                        var clonedField = fieldElement.clone();
-                        clonedField.find('.field-label').text(clonedField.find('.field-label').text() + ' (Copy)');
-                        fieldElement.after(clonedField);
+                        if (fieldElement.length) {
+                            try {
+                                var clonedField = fieldElement.clone();
+                                var currentLabel = clonedField.find('.field-label').text();
+                                clonedField.find('.field-label').text(currentLabel + ' (Copy)');
+                                fieldElement.after(clonedField);
+                            } catch (error) {
+                                console.error('Error duplicating field:', error);
+                                formEditor.showMessage('Error duplicating field', 'error');
+                            }
+                        }
                     });
                     
                     // Toggle step
@@ -623,6 +681,7 @@ class PsyemProjectSafeFormEditor {
                     // Modal events
                     $(document).on('click', '.psyem-modal-close, #cancel_field_edit', function() {
                         $('#psyem-field-editor-modal').hide();
+                        formEditor.currentEditingField = null;
                     });
                     
                     $(document).on('click', '#save_field_changes', function(e) {
@@ -898,6 +957,36 @@ class PsyemProjectSafeFormEditor {
                     });
                 },
                 
+                clearFormConfig: function() {
+                    var $button = $('#psyem-clear-config');
+                    $button.addClass('loading').prop('disabled', true);
+                    
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'psyem_clear_form_config',
+                            nonce: '<?php echo wp_create_nonce('psyem_form_editor_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                formEditor.showMessage('Form cleared successfully! Reloading...', 'success');
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1500);
+                            } else {
+                                formEditor.showMessage(response.data || 'Error clearing form', 'error');
+                            }
+                        },
+                        error: function() {
+                            formEditor.showMessage('An error occurred while clearing.', 'error');
+                        },
+                        complete: function() {
+                            $button.removeClass('loading').prop('disabled', false);
+                        }
+                    });
+                },
+                
                 collectFormData: function() {
                     var formConfig = {
                         settings: {
@@ -932,13 +1021,26 @@ class PsyemProjectSafeFormEditor {
                     var messageClass = type === 'success' ? 'success-message' : 'error-message';
                     var messageHtml = '<div class="' + messageClass + '">' + message + '</div>';
                     
-                    $('.psyem-form-editor-container').prepend(messageHtml);
+                    // Try to use the dedicated messages container first
+                    var $messagesContainer = $('#psyem-form-messages');
+                    if ($messagesContainer.length) {
+                        $messagesContainer.html(messageHtml);
+                    } else {
+                        // Fallback to prepending to main container
+                        $('.psyem-form-editor-container').prepend(messageHtml);
+                    }
                     
+                    // Auto-hide after 4 seconds
                     setTimeout(function() {
                         $('.' + messageClass).fadeOut(function() {
                             $(this).remove();
                         });
-                    }, 3000);
+                    }, 4000);
+                    
+                    // Scroll to top to show message
+                    $('html, body').animate({
+                        scrollTop: 0
+                    }, 300);
                 },
                 
                 updateFieldPositions: function() {
@@ -973,10 +1075,36 @@ class PsyemProjectSafeFormEditor {
      */
     public function render_admin_page() {
         $form_config = get_option(self::FORM_CONFIG_OPTION, $this->get_default_form_config());
+        
+        // Check if form config is corrupted and reset if needed
+        if (!is_array($form_config) || empty($form_config['settings']) || empty($form_config['steps'])) {
+            $form_config = $this->get_default_form_config();
+            update_option(self::FORM_CONFIG_OPTION, $form_config);
+        }
+        
+        // Ensure all required settings exist
+        if (!isset($form_config['settings'])) {
+            $form_config['settings'] = array();
+        }
+        
+        $default_settings = array(
+            'title' => __('Register For Project SAFE', 'psyeventsmanager'),
+            'description' => __('Two simple steps to register for the Project SAFE program.', 'psyeventsmanager'),
+            'success_message' => __('Thank you for your registration!', 'psyeventsmanager'),
+            'notification_email' => get_option('admin_email'),
+            'enable_captcha' => false,
+            'enable_double_optin' => false,
+        );
+        
+        $form_config['settings'] = array_merge($default_settings, $form_config['settings']);
+        
         ?>
         <div class="wrap">
             <h1><?php _e('Project SAFE Form Editor', 'psyeventsmanager'); ?></h1>
             <p><?php _e('Create and customize your Project SAFE registration forms with this intuitive form builder.', 'psyeventsmanager'); ?></p>
+            
+            <!-- Add success/error messages area -->
+            <div id="psyem-form-messages"></div>
             
             <div class="psyem-form-editor-container">
                 <div class="psyem-form-editor-sidebar">
@@ -1031,10 +1159,18 @@ class PsyemProjectSafeFormEditor {
                     
                     <div class="psyem-sidebar-section">
                         <h3><?php _e('Available Field Types', 'psyeventsmanager'); ?></h3>
-                        <p><small><?php _e('Drag and drop these field types into your form steps below.', 'psyeventsmanager'); ?></small></p>
+                        <p><small><?php _e('Drag and drop these field types into your form steps below, or click to add them.', 'psyeventsmanager'); ?></small></p>
                         <div class="psyem-available-fields">
                             <?php $this->render_available_fields(); ?>
                         </div>
+                    </div>
+                    
+                    <div class="psyem-sidebar-section">
+                        <h3><?php _e('Quick Actions', 'psyeventsmanager'); ?></h3>
+                        <button type="button" class="button button-secondary widefat" id="psyem-clear-config">
+                            <?php _e('Clear All & Reset', 'psyeventsmanager'); ?>
+                        </button>
+                        <p><small><?php _e('This will reset the form to default configuration.', 'psyeventsmanager'); ?></small></p>
                     </div>
                 </div>
                 
@@ -1235,48 +1371,83 @@ class PsyemProjectSafeFormEditor {
      * Render field preview
      */
     private function render_field_preview($field) {
-        switch ($field['type']) {
+        // Add safety checks
+        $field_type = isset($field['type']) ? $field['type'] : 'text';
+        $field_label = isset($field['label']) ? $field['label'] : '';
+        $field_placeholder = isset($field['placeholder']) ? $field['placeholder'] : '';
+        $field_description = isset($field['description']) ? $field['description'] : '';
+        $field_options = isset($field['options']) && is_array($field['options']) ? $field['options'] : array();
+        
+        switch ($field_type) {
             case 'text':
             case 'email':
             case 'tel':
             case 'number':
-                echo '<input type="' . esc_attr($field['type']) . '" placeholder="' . esc_attr($field['placeholder']) . '" disabled />';
+                echo '<input type="' . esc_attr($field_type) . '" placeholder="' . esc_attr($field_placeholder) . '" disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />';
                 break;
                 
             case 'textarea':
-                echo '<textarea placeholder="' . esc_attr($field['placeholder']) . '" disabled></textarea>';
+                echo '<textarea placeholder="' . esc_attr($field_placeholder) . '" disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px; resize: vertical;"></textarea>';
                 break;
                 
             case 'select':
-                echo '<select disabled>';
-                echo '<option>' . esc_html($field['placeholder']) . '</option>';
-                if (!empty($field['options'])) {
-                    foreach ($field['options'] as $option) {
-                        echo '<option>' . esc_html($option['label']) . '</option>';
+                echo '<select disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">';
+                echo '<option value="">' . esc_html($field_placeholder) . '</option>';
+                
+                if (!empty($field_options)) {
+                    foreach ($field_options as $option) {
+                        $option_value = isset($option['value']) ? $option['value'] : '';
+                        $option_label = isset($option['label']) ? $option['label'] : '';
+                        
+                        if (!empty($option_label)) {
+                            echo '<option value="' . esc_attr($option_value) . '">' . esc_html($option_label) . '</option>';
+                        }
                     }
+                } else {
+                    echo '<option value="option1">Sample Option 1</option>';
+                    echo '<option value="option2">Sample Option 2</option>';
                 }
                 echo '</select>';
                 break;
                 
             case 'checkbox':
-                echo '<label><input type="checkbox" disabled /> ' . esc_html($field['label']) . '</label>';
+                echo '<label style="display: inline-flex; align-items: center; gap: 8px;">';
+                echo '<input type="checkbox" disabled /> ';
+                echo '<span>' . esc_html($field_label) . '</span>';
+                echo '</label>';
                 break;
                 
             case 'radio':
-                if (!empty($field['options'])) {
-                    foreach ($field['options'] as $option) {
-                        echo '<label><input type="radio" name="preview_radio_' . uniqid() . '" disabled /> ' . esc_html($option['label']) . '</label><br>';
+                if (!empty($field_options)) {
+                    $radio_name = 'preview_radio_' . uniqid();
+                    foreach ($field_options as $option) {
+                        $option_value = isset($option['value']) ? $option['value'] : '';
+                        $option_label = isset($option['label']) ? $option['label'] : '';
+                        
+                        if (!empty($option_label)) {
+                            echo '<label style="display: block; margin-bottom: 5px;">';
+                            echo '<input type="radio" name="' . esc_attr($radio_name) . '" value="' . esc_attr($option_value) . '" disabled /> ';
+                            echo esc_html($option_label);
+                            echo '</label>';
+                        }
                     }
+                } else {
+                    echo '<label style="display: block;"><input type="radio" disabled /> Sample Option 1</label>';
+                    echo '<label style="display: block;"><input type="radio" disabled /> Sample Option 2</label>';
                 }
                 break;
                 
             case 'date':
-                echo '<input type="date" disabled />';
+                echo '<input type="date" disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />';
+                break;
+                
+            default:
+                echo '<input type="text" placeholder="' . esc_attr($field_placeholder) . '" disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />';
                 break;
         }
         
-        if (!empty($field['description'])) {
-            echo '<small class="field-description">' . esc_html($field['description']) . '</small>';
+        if (!empty($field_description)) {
+            echo '<div class="field-description" style="margin-top: 5px; font-size: 12px; color: #666; font-style: italic;">' . esc_html($field_description) . '</div>';
         }
     }
     
@@ -1376,6 +1547,30 @@ class PsyemProjectSafeFormEditor {
     }
     
     /**
+     * AJAX handler for clearing form configuration
+     */
+    public function ajax_clear_form_config() {
+        check_ajax_referer('psyem_form_editor_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Insufficient permissions', 'psyeventsmanager'));
+        }
+        
+        $default_config = $this->get_default_form_config();
+        $cleared = update_option(self::FORM_CONFIG_OPTION, $default_config);
+        
+        if ($cleared) {
+            error_log('Project SAFE form configuration cleared by user: ' . get_current_user_id());
+            wp_send_json_success(array(
+                'message' => __('Form configuration cleared and reset to default', 'psyeventsmanager'),
+                'config' => $default_config
+            ));
+        } else {
+            wp_send_json_error(__('Failed to clear form configuration', 'psyeventsmanager'));
+        }
+    }
+    
+    /**
      * Get default field label
      */
     private function get_default_field_label($field_type) {
@@ -1468,8 +1663,8 @@ class PsyemProjectSafeFormEditor {
         return array(
             'settings' => array(
                 'title' => __('Register For Project SAFE', 'psyeventsmanager'),
-                'description' => __('Two simple steps to register for the Project SAFE program.', 'psyeventsmanager'),
-                'success_message' => __('Thank you for your registration! We will contact you soon with further details.', 'psyeventsmanager'),
+                'description' => __('Two simple steps to register for the Project SAFE program. All personal details will be kept strictly confidential.', 'psyeventsmanager'),
+                'success_message' => __('Thank you for your registration! We will put you in our first priority list. You will be notified by email or SMS for successful registration.', 'psyeventsmanager'),
                 'notification_email' => get_option('admin_email'),
                 'enable_captcha' => false,
                 'enable_double_optin' => false,
@@ -1481,8 +1676,8 @@ class PsyemProjectSafeFormEditor {
                         array(
                             'type' => 'text',
                             'name' => 'field_first_name',
-                            'label' => __('First Name', 'psyeventsmanager'),
-                            'placeholder' => __('Enter your first name', 'psyeventsmanager'),
+                            'label' => __('First Name (Same with HKID)', 'psyeventsmanager'),
+                            'placeholder' => __('First Name (Same with HKID)', 'psyeventsmanager'),
                             'description' => '',
                             'required' => true,
                             'options' => array()
@@ -1490,8 +1685,8 @@ class PsyemProjectSafeFormEditor {
                         array(
                             'type' => 'text',
                             'name' => 'field_last_name',
-                            'label' => __('Last Name', 'psyeventsmanager'),
-                            'placeholder' => __('Enter your last name', 'psyeventsmanager'),
+                            'label' => __('Last Name (Same with HKID)', 'psyeventsmanager'),
+                            'placeholder' => __('Last Name (Same with HKID)', 'psyeventsmanager'),
                             'description' => '',
                             'required' => true,
                             'options' => array()
@@ -1500,13 +1695,175 @@ class PsyemProjectSafeFormEditor {
                             'type' => 'select',
                             'name' => 'field_gender',
                             'label' => __('Gender', 'psyeventsmanager'),
-                            'placeholder' => __('Select your gender', 'psyeventsmanager'),
+                            'placeholder' => __('Gender', 'psyeventsmanager'),
                             'description' => '',
                             'required' => true,
                             'options' => array(
                                 array('value' => 'female', 'label' => __('Female', 'psyeventsmanager')),
                                 array('value' => 'male', 'label' => __('Male', 'psyeventsmanager')),
-                                array('value' => 'other', 'label' => __('Other', 'psyeventsmanager')),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_dob_day',
+                            'label' => __('Day of Birth', 'psyeventsmanager'),
+                            'placeholder' => __('Day of Birth', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => '01', 'label' => '1'),
+                                array('value' => '02', 'label' => '2'),
+                                array('value' => '03', 'label' => '3'),
+                                array('value' => '04', 'label' => '4'),
+                                array('value' => '05', 'label' => '5'),
+                                array('value' => '06', 'label' => '6'),
+                                array('value' => '07', 'label' => '7'),
+                                array('value' => '08', 'label' => '8'),
+                                array('value' => '09', 'label' => '9'),
+                                array('value' => '10', 'label' => '10'),
+                                array('value' => '11', 'label' => '11'),
+                                array('value' => '12', 'label' => '12'),
+                                array('value' => '13', 'label' => '13'),
+                                array('value' => '14', 'label' => '14'),
+                                array('value' => '15', 'label' => '15'),
+                                array('value' => '16', 'label' => '16'),
+                                array('value' => '17', 'label' => '17'),
+                                array('value' => '18', 'label' => '18'),
+                                array('value' => '19', 'label' => '19'),
+                                array('value' => '20', 'label' => '20'),
+                                array('value' => '21', 'label' => '21'),
+                                array('value' => '22', 'label' => '22'),
+                                array('value' => '23', 'label' => '23'),
+                                array('value' => '24', 'label' => '24'),
+                                array('value' => '25', 'label' => '25'),
+                                array('value' => '26', 'label' => '26'),
+                                array('value' => '27', 'label' => '27'),
+                                array('value' => '28', 'label' => '28'),
+                                array('value' => '29', 'label' => '29'),
+                                array('value' => '30', 'label' => '30'),
+                                array('value' => '31', 'label' => '31'),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_dob_month',
+                            'label' => __('Month of Birth', 'psyeventsmanager'),
+                            'placeholder' => __('Month of Birth', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => '01', 'label' => __('January', 'psyeventsmanager')),
+                                array('value' => '02', 'label' => __('February', 'psyeventsmanager')),
+                                array('value' => '03', 'label' => __('March', 'psyeventsmanager')),
+                                array('value' => '04', 'label' => __('April', 'psyeventsmanager')),
+                                array('value' => '05', 'label' => __('May', 'psyeventsmanager')),
+                                array('value' => '06', 'label' => __('June', 'psyeventsmanager')),
+                                array('value' => '07', 'label' => __('July', 'psyeventsmanager')),
+                                array('value' => '08', 'label' => __('August', 'psyeventsmanager')),
+                                array('value' => '09', 'label' => __('September', 'psyeventsmanager')),
+                                array('value' => '10', 'label' => __('October', 'psyeventsmanager')),
+                                array('value' => '11', 'label' => __('November', 'psyeventsmanager')),
+                                array('value' => '12', 'label' => __('December', 'psyeventsmanager')),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_dob_year',
+                            'label' => __('Year of Birth', 'psyeventsmanager'),
+                            'placeholder' => __('Year of Birth', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => '2007', 'label' => '2007'),
+                                array('value' => '2006', 'label' => '2006'),
+                                array('value' => '2005', 'label' => '2005'),
+                                array('value' => '2004', 'label' => '2004'),
+                                array('value' => '2003', 'label' => '2003'),
+                                array('value' => '2002', 'label' => '2002'),
+                                array('value' => '2001', 'label' => '2001'),
+                                array('value' => '2000', 'label' => '2000'),
+                                array('value' => '1999', 'label' => '1999'),
+                                array('value' => '1998', 'label' => '1998'),
+                                array('value' => '1997', 'label' => '1997'),
+                                array('value' => '1996', 'label' => '1996'),
+                                array('value' => '1995', 'label' => '1995'),
+                                array('value' => '1994', 'label' => '1994'),
+                                array('value' => '1993', 'label' => '1993'),
+                                array('value' => '1992', 'label' => '1992'),
+                                array('value' => '1991', 'label' => '1991'),
+                                array('value' => '1990', 'label' => '1990'),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_sexual_experience',
+                            'label' => __('Do you have any sexual experience?', 'psyeventsmanager'),
+                            'placeholder' => __('Do you have any sexual experience?', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => 'yes', 'label' => __('Yes', 'psyeventsmanager')),
+                                array('value' => 'no', 'label' => __('No', 'psyeventsmanager')),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_cervical_screening',
+                            'label' => __('Have you ever had any cervical screening in the last 3 years?', 'psyeventsmanager'),
+                            'placeholder' => __('Have you ever had any cervical screening in the last 3 years?', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => 'yes', 'label' => __('Yes', 'psyeventsmanager')),
+                                array('value' => 'no', 'label' => __('No', 'psyeventsmanager')),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_undergoing_treatment',
+                            'label' => __('Are you undergoing treatment for CIN or cervical cancer?', 'psyeventsmanager'),
+                            'placeholder' => __('Are you undergoing treatment for CIN or cervical cancer?', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => 'yes', 'label' => __('Yes', 'psyeventsmanager')),
+                                array('value' => 'no', 'label' => __('No', 'psyeventsmanager')),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_received_hpv',
+                            'label' => __('Have you ever received HPV vaccine?', 'psyeventsmanager'),
+                            'placeholder' => __('Have you ever received HPV vaccine?', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => 'yes', 'label' => __('Yes', 'psyeventsmanager')),
+                                array('value' => 'no', 'label' => __('No', 'psyeventsmanager')),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_pregnant',
+                            'label' => __('Are you pregnant?', 'psyeventsmanager'),
+                            'placeholder' => __('Are you pregnant?', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => 'yes', 'label' => __('Yes', 'psyeventsmanager')),
+                                array('value' => 'no', 'label' => __('No', 'psyeventsmanager')),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_hysterectomy',
+                            'label' => __('Did you have a hysterectomy?', 'psyeventsmanager'),
+                            'placeholder' => __('Did you have a hysterectomy?', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => 'yes', 'label' => __('Yes', 'psyeventsmanager')),
+                                array('value' => 'no', 'label' => __('No', 'psyeventsmanager')),
                             )
                         ),
                     )
@@ -1518,7 +1875,7 @@ class PsyemProjectSafeFormEditor {
                             'type' => 'tel',
                             'name' => 'field_phone',
                             'label' => __('Phone Number', 'psyeventsmanager'),
-                            'placeholder' => __('Enter your phone number', 'psyeventsmanager'),
+                            'placeholder' => __('Phone Number', 'psyeventsmanager'),
                             'description' => '',
                             'required' => true,
                             'options' => array()
@@ -1527,10 +1884,75 @@ class PsyemProjectSafeFormEditor {
                             'type' => 'email',
                             'name' => 'field_email',
                             'label' => __('Email Address', 'psyeventsmanager'),
-                            'placeholder' => __('Enter your email address', 'psyeventsmanager'),
+                            'placeholder' => __('Email Address', 'psyeventsmanager'),
                             'description' => '',
                             'required' => true,
                             'options' => array()
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_region',
+                            'label' => __('Region', 'psyeventsmanager'),
+                            'placeholder' => __('Region', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => 'Hong Kong Island', 'label' => __('Hong Kong Island', 'psyeventsmanager')),
+                                array('value' => 'Kowloon', 'label' => __('Kowloon', 'psyeventsmanager')),
+                                array('value' => 'New Territories', 'label' => __('New Territories', 'psyeventsmanager')),
+                            )
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_district',
+                            'label' => __('District', 'psyeventsmanager'),
+                            'placeholder' => __('District', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array(
+                                array('value' => 'Central and Western', 'label' => __('Central and Western', 'psyeventsmanager')),
+                                array('value' => 'Eastern', 'label' => __('Eastern', 'psyeventsmanager')),
+                                array('value' => 'Southern', 'label' => __('Southern', 'psyeventsmanager')),
+                                array('value' => 'Wan Chai', 'label' => __('Wan Chai', 'psyeventsmanager')),
+                                array('value' => 'Sham Shui Po', 'label' => __('Sham Shui Po', 'psyeventsmanager')),
+                                array('value' => 'Kowloon City', 'label' => __('Kowloon City', 'psyeventsmanager')),
+                                array('value' => 'Kwun Tong', 'label' => __('Kwun Tong', 'psyeventsmanager')),
+                                array('value' => 'Wong Tai Sin', 'label' => __('Wong Tai Sin', 'psyeventsmanager')),
+                                array('value' => 'Yau Tsim Mong', 'label' => __('Yau Tsim Mong', 'psyeventsmanager')),
+                                array('value' => 'Islands', 'label' => __('Islands', 'psyeventsmanager')),
+                                array('value' => 'Kwai Tsing', 'label' => __('Kwai Tsing', 'psyeventsmanager')),
+                                array('value' => 'North', 'label' => __('North', 'psyeventsmanager')),
+                                array('value' => 'Sai Kung', 'label' => __('Sai Kung', 'psyeventsmanager')),
+                                array('value' => 'Sha Tin', 'label' => __('Sha Tin', 'psyeventsmanager')),
+                                array('value' => 'Tai Po', 'label' => __('Tai Po', 'psyeventsmanager')),
+                                array('value' => 'Tsuen Wan', 'label' => __('Tsuen Wan', 'psyeventsmanager')),
+                                array('value' => 'Tuen Mun', 'label' => __('Tuen Mun', 'psyeventsmanager')),
+                                array('value' => 'Yuen Long', 'label' => __('Yuen Long', 'psyeventsmanager')),
+                            )
+                        ),
+                        array(
+                            'type' => 'text',
+                            'name' => 'field_address',
+                            'label' => __('Address', 'psyeventsmanager'),
+                            'placeholder' => __('Address', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => true,
+                            'options' => array()
+                        ),
+                        array(
+                            'type' => 'select',
+                            'name' => 'field_source',
+                            'label' => __('How have you heard about this study?', 'psyeventsmanager'),
+                            'placeholder' => __('How have you heard about this study?', 'psyeventsmanager'),
+                            'description' => '',
+                            'required' => false,
+                            'options' => array(
+                                array('value' => 'Karen Leung Foundation Website', 'label' => __('Karen Leung Foundation Website', 'psyeventsmanager')),
+                                array('value' => 'PHASE Scientific', 'label' => __('PHASE Scientific', 'psyeventsmanager')),
+                                array('value' => 'Social Media', 'label' => __('Social Media (eg. Facebook, Instagram, etc)', 'psyeventsmanager')),
+                                array('value' => 'School News', 'label' => __('School News', 'psyeventsmanager')),
+                                array('value' => 'Health Talk by Karen Leung Foundation', 'label' => __('Health Talk by Karen Leung Foundation', 'psyeventsmanager')),
+                            )
                         ),
                     )
                 )
