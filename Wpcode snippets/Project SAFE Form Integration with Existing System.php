@@ -393,7 +393,7 @@ class PsyemProjectSafeFormIntegration {
             function validateStep(stepElement) {
                 var isValid = true;
                 
-                stepElement.find('[required]').each(function() {
+                stepElement.find('[required]:visible').each(function() {
                     var $field = $(this);
                     var value = $field.val().trim();
                     
