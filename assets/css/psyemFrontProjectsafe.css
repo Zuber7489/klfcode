@@ -1717,3 +1717,48 @@ a.project-teal__sign-up-button,button.project-teal__sign-up-button{display:inlin
 
 #psyemFirstStepForm{line-height: 30px;}
 #psyemSecondStepForm{line-height: 30px;}
+/*
+ Date field styling */
+.form-item--date input[type="date"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 3px;
+    padding: 15px 16px;
+    font-size: 1.0625rem;
+    font-weight: 400;
+    color: #605A63;
+    width: 100%;
+    height: 50px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+}
+
+.form-item--date input[type="date"]:focus {
+    outline: none;
+    border-color: #58bec7;
+    box-shadow: 0 0 0 2px rgba(88, 190, 199, 0.2);
+}
+
+.form-item--date input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    color: #58bec7;
+    font-size: 16px;
+    padding: 0;
+    margin: 0;
+}
+
+.form-item--date input[type="date"]::-webkit-inner-spin-button,
+.form-item--date input[type="date"]::-webkit-clear-button {
+    display: none;
+}
+
+/* Ensure date field label styling matches other fields */
+.form-item--date label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #2C2A2E;
+}

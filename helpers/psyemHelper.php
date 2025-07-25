@@ -1660,10 +1660,7 @@ function psyem_ManageProjectsafeFormData($post = [])
 			$participant_district 	= trim(@$ContactInfo['field_district']);
 			$participant_address 	= trim(@$ContactInfo['field_address']);
 
-			$dobDate				= trim(@$ParticipantInfo['field_dob_day']);
-			$dobMonth				= trim(@$ParticipantInfo['field_dob_month']);
-			$dobYear				= trim(@$ParticipantInfo['field_dob_year']);
-			$pdob                 	= $dobYear . '-' . $dobMonth . '-' . $dobDate;
+			$pdob					= trim(@$ParticipantInfo['field_date_of_birth']);
 			$date 					= new DateTime($pdob);
 			$pdobwords 				= $date->format('l, F j, Y');
 

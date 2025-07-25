@@ -365,12 +365,20 @@ class PsyemProjectSafeFormEditor {
         }
         
         .select-field-preview select {
+            width: 100% !important;
+            padding: 10px 12px !important;
+            border: 1px solid #ddd !important;
+            border-radius: 4px !important;
+            background: #fff !important;
+            font-size: 14px !important;
             appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
             background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>') !important;
             background-repeat: no-repeat !important;
             background-position: right 12px center !important;
             background-size: 12px !important;
-            background-color: #fff !important;
+            cursor: pointer !important;
         }
         
         /* Remove any conflicting styles */
@@ -404,6 +412,17 @@ class PsyemProjectSafeFormEditor {
             box-shadow: 0 0 0 1px #0073aa !important;
         }
         
+        /* Date field specific styling */
+        .date-field-preview input[type="date"] {
+            background-color: #fff !important;
+            cursor: pointer !important;
+        }
+        
+        .date-field-preview input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            color: #0073aa;
+        }
+        
         /* Field preview containers */
         .radio-field-preview,
         .checkbox-field-preview {
@@ -413,6 +432,15 @@ class PsyemProjectSafeFormEditor {
         
         .select-field-preview {
             margin-bottom: 5px;
+        }
+        
+        /* Prevent multiple dropdown arrows */
+        .psyem-field-preview select {
+            background-image: none !important;
+        }
+        
+        .psyem-field-preview .select-field-preview select {
+            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>') !important;
         }
         
         .psyem-field-preview label {
@@ -502,6 +530,33 @@ class PsyemProjectSafeFormEditor {
         .field-option-item .remove-option {
             color: #d63638;
             cursor: pointer;
+            padding: 8px;
+            margin-left: 8px;
+            border-radius: 3px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .field-option-item .remove-option:hover {
+            background-color: #f8d7da;
+        }
+        
+        .field-option-item .option-label {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .field-option-item .option-label:focus {
+            border-color: #0073aa;
+            outline: none;
+            box-shadow: 0 0 0 1px #0073aa;
+        }
+        
+        .field-options-group p small {
+            color: #666;
+            font-style: italic;
         }
         
         .success-message {
@@ -819,6 +874,30 @@ class PsyemProjectSafeFormEditor {
                             $('.field-options-group').hide();
                         }
                     });
+                    
+                    // Auto-generate option values from labels as user types
+                    $(document).on('input', '.option-label', function() {
+                        var label = $(this).val().trim();
+                        var valueField = $(this).siblings('.option-value');
+                        
+                        if (label) {
+                            // Auto-generate value from label
+                            var value = label.toLowerCase()
+                                .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+                                .replace(/\s+/g, '_') // Replace spaces with underscores
+                                .replace(/_{2,}/g, '_') // Replace multiple underscores with single
+                                .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+                            
+                            // Fallback if value becomes empty
+                            if (!value) {
+                                value = 'option_' + Date.now();
+                            }
+                            
+                            valueField.val(value);
+                        } else {
+                            valueField.val('');
+                        }
+                    });
                 },
                 
                 initColorPicker: function() {
@@ -834,7 +913,7 @@ class PsyemProjectSafeFormEditor {
                         label: this.getDefaultLabel(fieldType),
                         placeholder: 'Enter ' + fieldType,
                         description: '',
-                        required: false, // Always false since we removed required option
+                        required: false, // New fields default to not required
                         options: []
                     };
                     
@@ -858,7 +937,8 @@ class PsyemProjectSafeFormEditor {
                 },
                 
                 generateFieldHtml: function(fieldData) {
-                    // No required indicator since we removed required field functionality
+                    // Show required indicator if field is required
+                    var requiredIndicator = fieldData.required ? '<span class="required-indicator">*</span>' : '';
                     var fieldPreview = this.generateFieldPreview(fieldData);
                     
                     return '<div class="psyem-form-field" data-field-type="' + fieldData.type + '">' +
@@ -866,6 +946,7 @@ class PsyemProjectSafeFormEditor {
                         '<span class="dashicons dashicons-move field-handle"></span>' +
                         '<span class="field-label">' + fieldData.label + '</span>' +
                         '<div class="field-actions">' +
+                        requiredIndicator +
                         '<button type="button" class="button button-small edit-field">Edit</button>' +
                         '<button type="button" class="button button-small duplicate-field">Duplicate</button>' +
                         '<button type="button" class="button button-small delete-field">Delete</button>' +
@@ -890,13 +971,15 @@ class PsyemProjectSafeFormEditor {
                             preview = '<textarea placeholder="' + fieldData.placeholder + '" disabled></textarea>';
                             break;
                         case 'select':
-                            preview = '<select disabled><option>' + fieldData.placeholder + '</option>';
+                            preview = '<div class="select-field-preview">';
+                            preview += '<select disabled>';
+                            preview += '<option value="">' + fieldData.placeholder + '</option>';
                             if (fieldData.options && fieldData.options.length > 0) {
                                 fieldData.options.forEach(function(option) {
-                                    preview += '<option>' + option.label + '</option>';
-                                });
+                                    preview += '<option value="' + this.escapeHtml(option.value) + '">' + this.escapeHtml(option.label) + '</option>';
+                                }.bind(this));
                             }
-                            preview += '</select>';
+                            preview += '</select></div>';
                             break;
                         case 'checkbox':
                             preview = '<label><input type="checkbox" disabled /> ' + fieldData.label + '</label>';
@@ -909,7 +992,7 @@ class PsyemProjectSafeFormEditor {
                             }
                             break;
                         case 'date':
-                            preview = '<input type="date" disabled />';
+                            preview = '<div class="date-field-preview"><input type="date" placeholder="' + fieldData.placeholder + '" disabled /></div>';
                             break;
                     }
                     
@@ -958,8 +1041,8 @@ class PsyemProjectSafeFormEditor {
                     label = label || '';
                     
                     var optionHtml = '<div class="field-option-item">' +
-                        '<input type="text" placeholder="Option Value" value="' + value + '" class="option-value" />' +
-                        '<input type="text" placeholder="Option Label" value="' + label + '" class="option-label" />' +
+                        '<input type="hidden" value="' + value + '" class="option-value" />' +
+                        '<input type="text" placeholder="Enter option text (e.g., Yes, No, Maybe)" value="' + label + '" class="option-label" style="width: calc(100% - 40px);" />' +
                         '<span class="dashicons dashicons-trash remove-option"></span>' +
                         '</div>';
                     
@@ -975,15 +1058,29 @@ class PsyemProjectSafeFormEditor {
                     fieldData.label = $('#field_label').val();
                     fieldData.placeholder = $('#field_placeholder').val();
                     fieldData.description = $('#field_description').val();
-                    fieldData.required = false; // Set to false since we removed the required option
+                    // Keep existing required status instead of forcing false
                     
-                    // Update options
+                    // Update options - auto-generate values from labels
                     var options = [];
                     $('#field_options_container .field-option-item').each(function() {
-                        var value = $(this).find('.option-value').val();
-                        var label = $(this).find('.option-label').val();
-                        if (value && label) {
+                        var label = $(this).find('.option-label').val().trim();
+                        if (label) {
+                            // Auto-generate value from label: lowercase, replace spaces with underscores, remove special chars
+                            var value = label.toLowerCase()
+                                .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+                                .replace(/\s+/g, '_') // Replace spaces with underscores
+                                .replace(/_{2,}/g, '_') // Replace multiple underscores with single
+                                .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+                            
+                            // Fallback if value becomes empty
+                            if (!value) {
+                                value = 'option_' + (options.length + 1);
+                            }
+                            
                             options.push({value: value, label: label});
+                            
+                            // Update the hidden value field for consistency
+                            $(this).find('.option-value').val(value);
                         }
                     });
                     fieldData.options = options;
@@ -992,9 +1089,11 @@ class PsyemProjectSafeFormEditor {
                     this.currentEditingField.find('.field-label').text(fieldData.label);
                     this.currentEditingField.find('.field-data').val(JSON.stringify(fieldData));
                     
-                    // Remove any required indicators since we don't support required fields anymore
+                    // Update required indicator based on field's required status
                     var requiredIndicator = this.currentEditingField.find('.required-indicator');
-                    if (requiredIndicator.length > 0) {
+                    if (fieldData.required && requiredIndicator.length === 0) {
+                        this.currentEditingField.find('.field-actions').prepend('<span class="required-indicator">*</span>');
+                    } else if (!fieldData.required && requiredIndicator.length > 0) {
                         requiredIndicator.remove();
                     }
                     
@@ -1212,8 +1311,6 @@ class PsyemProjectSafeFormEditor {
             'description' => __('Two simple steps to register for the Project SAFE program.', 'psyeventsmanager'),
             'success_message' => __('Thank you for your registration!', 'psyeventsmanager'),
             'notification_email' => get_option('admin_email'),
-            'enable_captcha' => false,
-            'enable_double_optin' => false,
         );
         
         $form_config['settings'] = array_merge($default_settings, $form_config['settings']);
@@ -1257,22 +1354,6 @@ class PsyemProjectSafeFormEditor {
                                 <input type="email" id="notification_email" name="notification_email" 
                                        value="<?php echo esc_attr($form_config['settings']['notification_email']); ?>" 
                                        class="widefat" />
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>
-                                    <input type="checkbox" name="enable_captcha" id="enable_captcha" value="1" 
-                                           <?php checked($form_config['settings']['enable_captcha']); ?> />
-                                    <?php _e('Enable reCAPTCHA', 'psyeventsmanager'); ?>
-                                </label>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>
-                                    <input type="checkbox" name="enable_double_optin" id="enable_double_optin" value="1" 
-                                           <?php checked($form_config['settings']['enable_double_optin']); ?> />
-                                    <?php _e('Enable Double Opt-in', 'psyeventsmanager'); ?>
-                                </label>
                             </div>
                         </form>
                     </div>
@@ -1336,7 +1417,8 @@ class PsyemProjectSafeFormEditor {
                     </div>
                     
                     <div class="form-group field-options-group" style="display: none;">
-                        <label><?php _e('Field Options (for dropdown, radio, checkbox fields)', 'psyeventsmanager'); ?></label>
+                        <label><?php _e('Field Options', 'psyeventsmanager'); ?></label>
+                        <p><small><?php _e('Simply enter the text you want users to see. The system will automatically create the technical values.', 'psyeventsmanager'); ?></small></p>
                         <div id="field_options_container">
                             <!-- Dynamic options will be added here -->
                         </div>
@@ -1456,6 +1538,9 @@ class PsyemProjectSafeFormEditor {
                 <span class="dashicons dashicons-move field-handle"></span>
                 <span class="field-label"><?php echo esc_html($field['label']); ?></span>
                 <div class="field-actions">
+                    <?php if (!empty($field['required'])): ?>
+                        <span class="required-indicator">*</span>
+                    <?php endif; ?>
                     <button type="button" class="button button-small edit-field">
                         <?php _e('Edit', 'psyeventsmanager'); ?>
                     </button>
@@ -1506,7 +1591,7 @@ class PsyemProjectSafeFormEditor {
                 
             case 'select':
                 echo '<div class="select-field-preview">';
-                echo '<select disabled style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; background: #fff; font-size: 14px; appearance: none; background-image: url(\'data:image/svg+xml;charset=US-ASCII,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 4 5\"><path fill=\"%23666\" d=\"M2 0L0 2h4zm0 5L0 3h4z\"/></svg>\'); background-repeat: no-repeat; background-position: right 12px center; background-size: 12px;">';
+                echo '<select disabled>';
                 echo '<option value="">' . esc_html($field_placeholder) . '</option>';
                 
                 if (!empty($field_options)) {
@@ -1743,8 +1828,6 @@ class PsyemProjectSafeFormEditor {
             'description' => sanitize_textarea_field($config['settings']['description'] ?? ''),
             'success_message' => sanitize_textarea_field($config['settings']['success_message'] ?? ''),
             'notification_email' => sanitize_email($config['settings']['notification_email'] ?? ''),
-            'enable_captcha' => (bool) ($config['settings']['enable_captcha'] ?? false),
-            'enable_double_optin' => (bool) ($config['settings']['enable_double_optin'] ?? false),
         );
         
         // Sanitize steps
@@ -1808,8 +1891,6 @@ class PsyemProjectSafeFormEditor {
                 'description' => __('Two simple steps to register for the Project SAFE program. All personal details will be kept strictly confidential.', 'psyeventsmanager'),
                 'success_message' => __('Thank you for your registration! We will put you in our first priority list. You will be notified by email or SMS for successful registration.', 'psyeventsmanager'),
                 'notification_email' => get_option('admin_email'),
-                'enable_captcha' => false,
-                'enable_double_optin' => false,
             ),
             'steps' => array(
                 array(
@@ -1847,62 +1928,30 @@ class PsyemProjectSafeFormEditor {
                         ),
                         array(
                             'type' => 'select',
-                            'name' => 'field_dob_day',
+                            'name' => 'field_day_of_birth',
                             'label' => __('Day of Birth', 'psyeventsmanager'),
                             'placeholder' => __('Day of Birth', 'psyeventsmanager'),
                             'description' => '',
                             'required' => true,
-                            'options' => array(
-                                array('value' => '01', 'label' => '1'),
-                                array('value' => '02', 'label' => '2'),
-                                array('value' => '03', 'label' => '3'),
-                                array('value' => '04', 'label' => '4'),
-                                array('value' => '05', 'label' => '5'),
-                                array('value' => '06', 'label' => '6'),
-                                array('value' => '07', 'label' => '7'),
-                                array('value' => '08', 'label' => '8'),
-                                array('value' => '09', 'label' => '9'),
-                                array('value' => '10', 'label' => '10'),
-                                array('value' => '11', 'label' => '11'),
-                                array('value' => '12', 'label' => '12'),
-                                array('value' => '13', 'label' => '13'),
-                                array('value' => '14', 'label' => '14'),
-                                array('value' => '15', 'label' => '15'),
-                                array('value' => '16', 'label' => '16'),
-                                array('value' => '17', 'label' => '17'),
-                                array('value' => '18', 'label' => '18'),
-                                array('value' => '19', 'label' => '19'),
-                                array('value' => '20', 'label' => '20'),
-                                array('value' => '21', 'label' => '21'),
-                                array('value' => '22', 'label' => '22'),
-                                array('value' => '23', 'label' => '23'),
-                                array('value' => '24', 'label' => '24'),
-                                array('value' => '25', 'label' => '25'),
-                                array('value' => '26', 'label' => '26'),
-                                array('value' => '27', 'label' => '27'),
-                                array('value' => '28', 'label' => '28'),
-                                array('value' => '29', 'label' => '29'),
-                                array('value' => '30', 'label' => '30'),
-                                array('value' => '31', 'label' => '31'),
-                            )
+                            'options' => array_map(function($d) { return array('value' => $d, 'label' => $d); }, range(1, 31))
                         ),
                         array(
                             'type' => 'select',
-                            'name' => 'field_dob_month',
+                            'name' => 'field_month_of_birth',
                             'label' => __('Month of Birth', 'psyeventsmanager'),
                             'placeholder' => __('Month of Birth', 'psyeventsmanager'),
                             'description' => '',
                             'required' => true,
                             'options' => array(
-                                array('value' => '01', 'label' => __('January', 'psyeventsmanager')),
-                                array('value' => '02', 'label' => __('February', 'psyeventsmanager')),
-                                array('value' => '03', 'label' => __('March', 'psyeventsmanager')),
-                                array('value' => '04', 'label' => __('April', 'psyeventsmanager')),
-                                array('value' => '05', 'label' => __('May', 'psyeventsmanager')),
-                                array('value' => '06', 'label' => __('June', 'psyeventsmanager')),
-                                array('value' => '07', 'label' => __('July', 'psyeventsmanager')),
-                                array('value' => '08', 'label' => __('August', 'psyeventsmanager')),
-                                array('value' => '09', 'label' => __('September', 'psyeventsmanager')),
+                                array('value' => '1', 'label' => __('January', 'psyeventsmanager')),
+                                array('value' => '2', 'label' => __('February', 'psyeventsmanager')),
+                                array('value' => '3', 'label' => __('March', 'psyeventsmanager')),
+                                array('value' => '4', 'label' => __('April', 'psyeventsmanager')),
+                                array('value' => '5', 'label' => __('May', 'psyeventsmanager')),
+                                array('value' => '6', 'label' => __('June', 'psyeventsmanager')),
+                                array('value' => '7', 'label' => __('July', 'psyeventsmanager')),
+                                array('value' => '8', 'label' => __('August', 'psyeventsmanager')),
+                                array('value' => '9', 'label' => __('September', 'psyeventsmanager')),
                                 array('value' => '10', 'label' => __('October', 'psyeventsmanager')),
                                 array('value' => '11', 'label' => __('November', 'psyeventsmanager')),
                                 array('value' => '12', 'label' => __('December', 'psyeventsmanager')),
@@ -1910,30 +1959,14 @@ class PsyemProjectSafeFormEditor {
                         ),
                         array(
                             'type' => 'select',
-                            'name' => 'field_dob_year',
+                            'name' => 'field_year_of_birth',
                             'label' => __('Year of Birth', 'psyeventsmanager'),
                             'placeholder' => __('Year of Birth', 'psyeventsmanager'),
                             'description' => '',
                             'required' => true,
-                            'options' => array(
-                                array('value' => '2007', 'label' => '2007'),
-                                array('value' => '2006', 'label' => '2006'),
-                                array('value' => '2005', 'label' => '2005'),
-                                array('value' => '2004', 'label' => '2004'),
-                                array('value' => '2003', 'label' => '2003'),
-                                array('value' => '2002', 'label' => '2002'),
-                                array('value' => '2001', 'label' => '2001'),
-                                array('value' => '2000', 'label' => '2000'),
-                                array('value' => '1999', 'label' => '1999'),
-                                array('value' => '1998', 'label' => '1998'),
-                                array('value' => '1997', 'label' => '1997'),
-                                array('value' => '1996', 'label' => '1996'),
-                                array('value' => '1995', 'label' => '1995'),
-                                array('value' => '1994', 'label' => '1994'),
-                                array('value' => '1993', 'label' => '1993'),
-                                array('value' => '1992', 'label' => '1992'),
-                                array('value' => '1991', 'label' => '1991'),
-                                array('value' => '1990', 'label' => '1990'),
+                            'options' => array_map(
+                                function($y) { return array('value' => $y, 'label' => $y); },
+                                range(2007, 1925, -1)
                             )
                         ),
                         array(

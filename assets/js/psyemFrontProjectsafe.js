@@ -67,19 +67,9 @@ var PsyemProjectSafePanel = function () {
             displayToaster('Gender field is required', 'info');
             return 'FALSE';
         }
-        var field_dob_day = psyemPaticipantForm.find('select[name="field_dob_day"]');
-        if (!field_dob_day.val()) {
-            displayToaster('DOB date field is required', 'info');
-            return 'FALSE';
-        }
-        var field_dob_month = psyemPaticipantForm.find('select[name="field_dob_month"]');
-        if (!field_dob_month.val()) {
-            displayToaster('DOB month field is required', 'info');
-            return 'FALSE';
-        }
-        var field_dob_year = psyemPaticipantForm.find('select[name="field_dob_year"]');
-        if (!field_dob_year.val()) {
-            displayToaster('DOB year field is required', 'info');
+        var field_date_of_birth = psyemPaticipantForm.find('input[name="field_date_of_birth"]');
+        if (!field_date_of_birth.val()) {
+            displayToaster('Date of birth field is required', 'info');
             return 'FALSE';
         }
         var field_sexual_experience = psyemPaticipantForm.find('select[name="field_sexual_experience"]');
@@ -149,7 +139,7 @@ var PsyemProjectSafePanel = function () {
             return 'FALSE';
         }
 
-        var pdob = field_dob_year.val() + '-' + field_dob_month.val() + '-' + field_dob_day.val();
+        var pdob = field_date_of_birth.val();
         var particpant_age = calculateAgeInYears(pdob);
         var params = {
             'field_undergoing_treatment': field_undergoing_treatment.val(),

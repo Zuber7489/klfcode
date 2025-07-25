@@ -374,14 +374,14 @@ function psyem_ValidateProjectSafeFormData($post = [])
             if (!isset($post['field_gender']) || empty($post['field_gender'])) {
                 $errors[] = __('Gender field is required', 'psyeventsmanager');
             }
-            if (!isset($post['field_dob_day']) || empty($post['field_dob_day'])) {
-                $errors[] = __('DOB date field is required', 'psyeventsmanager');
-            }
-            if (!isset($post['field_dob_month']) || empty($post['field_dob_month'])) {
-                $errors[] = __('DOB month field is required', 'psyeventsmanager');
-            }
-            if (!isset($post['field_dob_year']) || empty($post['field_dob_year'])) {
-                $errors[] = __('DOB year field is required', 'psyeventsmanager');
+            if (!isset($post['field_date_of_birth']) || empty($post['field_date_of_birth'])) {
+                $errors[] = __('Date of birth field is required', 'psyeventsmanager');
+            } else {
+                // Validate date format
+                $date = DateTime::createFromFormat('Y-m-d', $post['field_date_of_birth']);
+                if (!$date || $date->format('Y-m-d') !== $post['field_date_of_birth']) {
+                    $errors[] = __('Please enter a valid date of birth', 'psyeventsmanager');
+                }
             }
             if (!isset($post['field_sexual_experience']) || empty($post['field_sexual_experience'])) {
                 $errors[] = __('Sexual experience field is required', 'psyeventsmanager');

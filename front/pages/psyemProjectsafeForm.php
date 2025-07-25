@@ -186,13 +186,21 @@ function psyem_render_dynamic_field($field) {
             <?php
             break;
             
+        case 'date':
+            ?>
+            <div class="form-item form-item--date half">
+                <input id="<?= esc_attr($field_name) ?>" <?= $required_attr ?> type="date" 
+                       name="<?= esc_attr($field_name) ?>" 
+                       placeholder="<?= esc_attr($field_placeholder) ?>" />
+                <label for="<?= esc_attr($field_name) ?>">
+                    <?= esc_html($field_label) ?><?= $required_star ?>
+                </label>
+            </div>
+            <?php
+            break;
+            
         case 'select':
-            $css_class_map = array(
-                'field_dob_day' => 'third',
-                'field_dob_month' => 'third', 
-                'field_dob_year' => 'third'
-            );
-            $css_class = isset($css_class_map[$field_name]) ? $css_class_map[$field_name] : '';
+            $css_class = '';
             ?>
             <div class="form-item <?= esc_attr($css_class) ?>">
                 <select id="<?= esc_attr($field_name) ?>" <?= $required_attr ?> name="<?= esc_attr($field_name) ?>">
@@ -200,33 +208,9 @@ function psyem_render_dynamic_field($field) {
                         <?= esc_html($field_placeholder) ?><?= $required_star ?>
                     </option>
                     <?php
-                    // Handle special cases for date fields and regions
-                    if ($field_name === 'field_dob_day') {
-                        for ($i = 1; $i <= 31; $i++) {
-                            $value = sprintf('%02d', $i);
-                            echo '<option value="' . esc_attr($value) . '">' . $i . '</option>';
-                        }
-                    } elseif ($field_name === 'field_dob_month') {
-                        $months = array(
-                            '01' => __('January', 'psyeventsmanager'),
-                            '02' => __('February', 'psyeventsmanager'),
-                            '03' => __('March', 'psyeventsmanager'),
-                            '04' => __('April', 'psyeventsmanager'),
-                            '05' => __('May', 'psyeventsmanager'),
-                            '06' => __('June', 'psyeventsmanager'),
-                            '07' => __('July', 'psyeventsmanager'),
-                            '08' => __('August', 'psyeventsmanager'),
-                            '09' => __('September', 'psyeventsmanager'),
-                            '10' => __('October', 'psyeventsmanager'),
-                            '11' => __('November', 'psyeventsmanager'),
-                            '12' => __('December', 'psyeventsmanager'),
-                        );
-                        foreach ($months as $value => $label) {
-                            echo '<option value="' . esc_attr($value) . '">' . esc_html($label) . '</option>';
-                        }
-                    } elseif ($field_name === 'field_dob_year') {
-                        if (function_exists('psyem_GetPreviousYearsFromYear')) {
-                            foreach (psyem_GetPreviousYearsFromYear((date("Y") - 17)) as $year) {
+                    // Handle special cases for regions and other select fields
+                    if (function_exists('psyem_GetPreviousYearsFromYear') && $field_name === 'field_some_year_field') {
+                        foreach (psyem_GetPreviousYearsFromYear((date("Y") - 17)) as $year) {
                                 echo '<option value="' . esc_attr($year) . '">' . esc_html($year) . '</option>';
                             }
                         } else {
@@ -392,80 +376,12 @@ ob_start(); ?>
                                         </select>
                                         <label for="field_gender"><?= esc_html(psyem_get_dynamic_field_label('field_gender', 'Gender', $form_config)) ?><span class="text-danger">*</span></label>
                                     </div>
-                                    <div class="form-item third">
-                                        <select required name="field_dob_day">
-                                            <option value="">
-                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_dob_day', 'Day of Birth', $form_config)) ?><span class="text-danger">*</span>
-                                            </option>
-                                            <option value="01">1</option>
-                                            <option value="02">2</option>
-                                            <option value="03">3</option>
-                                            <option value="04">4</option>
-                                            <option value="05">5</option>
-                                            <option value="06">6</option>
-                                            <option value="07">7</option>
-                                            <option value="08">8</option>
-                                            <option value="09">9</option>
-                                            <option value="10">10</option>
-                                            <option value="11">11</option>
-                                            <option value="12">12</option>
-                                            <option value="13">13</option>
-                                            <option value="14">14</option>
-                                            <option value="15">15</option>
-                                            <option value="16">16</option>
-                                            <option value="17">17</option>
-                                            <option value="18">18</option>
-                                            <option value="19">19</option>
-                                            <option value="20">20</option>
-                                            <option value="21">21</option>
-                                            <option value="22">22</option>
-                                            <option value="23">23</option>
-                                            <option value="24">24</option>
-                                            <option value="25">25</option>
-                                            <option value="26">26</option>
-                                            <option value="27">27</option>
-                                            <option value="28">28</option>
-                                            <option value="29">29</option>
-                                            <option value="30">30</option>
-                                            <option value="31">31</option>
-                                        </select>
-                                        <label for="field_dob_day">
-                                            <?= esc_html(psyem_get_dynamic_field_label('field_dob_day', 'Day of Birth', $form_config)) ?><span class="text-danger">*</span>
-                                        </label>
-                                    </div>
-                                    <div class="form-item third">
-                                        <select required name="field_dob_month">
-                                            <option value="">
-                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_dob_month', 'Month of Birth', $form_config)) ?><span class="text-danger">*</span>
-                                            </option>
-                                            <option value="01"><?= __('January', 'psyeventsmanager') ?></option>
-                                            <option value="02"><?= __('February', 'psyeventsmanager') ?></option>
-                                            <option value="03"><?= __('March', 'psyeventsmanager') ?></option>
-                                            <option value="04"><?= __('April', 'psyeventsmanager') ?></option>
-                                            <option value="05"><?= __('May', 'psyeventsmanager') ?></option>
-                                            <option value="06"><?= __('June', 'psyeventsmanager') ?></option>
-                                            <option value="07"><?= __('July', 'psyeventsmanager') ?></option>
-                                            <option value="08"><?= __('August', 'psyeventsmanager') ?></option>
-                                            <option value="09"><?= __('September', 'psyeventsmanager') ?></option>
-                                            <option value="10"><?= __('October', 'psyeventsmanager') ?></option>
-                                            <option value="11"><?= __('November', 'psyeventsmanager') ?></option>
-                                            <option value="12"><?= __('December', 'psyeventsmanager') ?></option>
-                                        </select>
-                                        <label for="field_dob_month">
-                                            <?= esc_html(psyem_get_dynamic_field_label('field_dob_month', 'Month of Birth', $form_config)) ?><span class="text-danger">*</span>
-                                        </label>
-                                    </div>
-                                    <div class="form-item third">
-                                        <select required name="field_dob_year">
-                                            <option value="">
-                                                <?= esc_html(psyem_get_dynamic_field_placeholder('field_dob_year', 'Year of Birth', $form_config)) ?><span class="text-danger">*</span>
-                                            </option>
-                                            <?php foreach (psyem_GetPreviousYearsFromYear((date("Y") - 17)) as $pyear) : ?>
-                                                <option value="<?= $pyear ?>"><?= $pyear ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <label for="field_dob_year">
-                                            <?= esc_html(psyem_get_dynamic_field_label('field_dob_year', 'Year of Birth', $form_config)) ?><span class="text-danger">*</span>
+                                    <div class="form-item form-item--date half">
+                                        <input id="field_date_of_birth" required type="date" 
+                                               name="field_date_of_birth" 
+                                               placeholder="<?= esc_attr(psyem_get_dynamic_field_placeholder('field_date_of_birth', 'Select your date of birth', $form_config)) ?>" />
+                                        <label for="field_date_of_birth">
+                                            <?= esc_html(psyem_get_dynamic_field_label('field_date_of_birth', 'Date of Birth', $form_config)) ?><span class="text-danger">*</span>
                                         </label>
                                     </div>
                                     <div class="form-item">
