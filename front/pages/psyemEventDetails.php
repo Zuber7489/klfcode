@@ -46,6 +46,10 @@ while (have_posts()) : the_post();
     $end_date           = psyem_GetFormattedDatetime('d F Y', $event_enddate);
     $end_time           = psyem_GetFormattedDatetime('h:i a', $event_startdate . '' . $event_endtime);
 
+    // Check if times are meaningful (not default 12:00 am times)
+    $has_meaningful_start_time = !empty($event_starttime) && $start_time !== '12:00 am';
+    $has_meaningful_end_time = !empty($event_endtime) && $end_time !== '12:00 am';
+
     $psyem_event_listing_page_id    = @$psyem_options['psyem_event_listing_page_id'];
 ?>
     <main id="content" <?php post_class('site-main psyemEventInfo'); ?> style="max-width: 100%; overflow: hidden;">
@@ -91,14 +95,14 @@ while (have_posts()) : the_post();
                         ?>
                     </div>
 
-                    <?php if (!empty($event_starttime) || !empty($event_endtime)) : ?>
+                    <?php if ($has_meaningful_start_time || $has_meaningful_end_time) : ?>
                         <div class="event-time event-date">
                             <?php 
-                            if (!empty($event_starttime) && !empty($event_endtime)) {
+                            if ($has_meaningful_start_time && $has_meaningful_end_time) {
                                 echo $start_time . ' - ' . $end_time;
-                            } elseif (!empty($event_starttime)) {
+                            } elseif ($has_meaningful_start_time) {
                                 echo $start_time;
-                            } elseif (!empty($event_endtime)) {
+                            } elseif ($has_meaningful_end_time) {
                                 echo $end_time;
                             }
                             ?>
@@ -152,7 +156,7 @@ while (have_posts()) : the_post();
                                                 <p class="eventAddressPre">
                                                     <?php 
                                                     echo $start_date;
-                                                    if (!empty($event_starttime)) {
+                                                    if ($has_meaningful_start_time) {
                                                         echo ' - ' . $start_time;
                                                     }
                                                     ?>
@@ -167,7 +171,7 @@ while (have_posts()) : the_post();
                                                 <p class="eventAddressPre">
                                                     <?php 
                                                     echo $end_date;
-                                                    if (!empty($event_endtime)) {
+                                                    if ($has_meaningful_end_time) {
                                                         echo ' - ' . $end_time;
                                                     }
                                                     ?>
