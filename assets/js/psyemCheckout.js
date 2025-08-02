@@ -419,6 +419,40 @@ jQuery(document).on('click', '#psyemContinueFreeBtn', function () {
     psyemProcessFreeEventBooking();
 });
 
+jQuery(document).on('click', '#psyemContinueInvitationBtn', function () {
+    var $Btn = jQuery(this);
+
+    var psyemTickets = (ticketElm) ? ticketElm.value : 0;
+    var psyemName = (nameElm) ? nameElm.value : '';
+    var psyemEmail = (emailElm) ? emailElm.value : '';
+
+    if (psyemTickets > 0) { } else {
+        displayToaster('Please choose particpants count', 'error');
+        return false;
+    }
+    if (psyemName && psyemName.length > 0) {
+        var isUname = validateUsername(psyemName);
+        if (!isUname) {
+            displayToaster('Please enter valid name, Add only alphabets [a-zA-Z]', 'error');
+            return false;
+        }
+    } else {
+        displayToaster('Please enter your name', 'error');
+        return false;
+    }
+    if (psyemEmail && psyemEmail.length > 0) {
+        if (!psyemIsValidEmail(psyemEmail)) {
+            displayToaster('Please enter a valid email address', 'error');
+            return false;
+        }
+    } else {
+        displayToaster('Please enter your valid email', 'error');
+        return false;
+    }
+
+    psyemProcessInvitationEventBooking();
+});
+
 jQuery(document).on('change', 'input[name="psyem_tickets"]', function () {
     var psyemTicketsCountInp = jQuery(this);
     var psyemTicketsCount = psyemTicketsCountInp.val();
@@ -632,6 +666,76 @@ function psyemProcessFreeEventBooking() {
             displayToaster('Payment info has been failed to update', 'error');
             setTimeout(() => {
                 hidePanelLoader(psyemPaymentSection);
+            }, 2000);
+        }
+    });
+}
+
+function psyemProcessInvitationEventBooking() {
+
+    var psyemTickets = (ticketElm) ? ticketElm.value : 0;
+    var psyemName = (nameElm) ? nameElm.value : '';
+    var psyemEmail = (emailElm) ? emailElm.value : '';
+    var psyemCompany = (companyElm) ? companyElm.value : '';
+
+    // Create a FormData object
+    const formData = new FormData();
+    formData.append('action', psyOrderFreeAction); // Using the same action as free booking
+    formData.append('checkout_key', psyemCheckoutEncKey);
+    formData.append('checkout_tickets', psyemTickets);
+    formData.append('checkout_name', psyemName);
+    formData.append('checkout_email', psyemEmail);
+    formData.append('checkout_company', psyemCompany);
+    formData.append('registration_type', 'Invitation');
+    formData.append(csrf_token_name, csrf_token_value);
+
+    var psyemInvitationSection = document.getElementById('psyemInvitationSection');
+    var psyemContinueInvitationBtn = document.getElementById('psyemContinueInvitationBtn');
+
+    jQuery.ajax({
+        type: "POST",
+        dataType: "JSON",
+        url: psyOrderAjaxUrl,
+        data: formData,
+        processData: false,
+        contentType: false,
+        accept: { json: 'application/json' },
+        beforeSend: function () {
+            showPanelLoader(psyemInvitationSection);
+            showHideButtonLoader(psyemContinueInvitationBtn, 'Show');
+        },
+        success: function (result) {
+            const { status, message, validation, data } = result;
+            var order_id = (data && data.order_id) ? data.order_id : 0;
+            var participant_id = (data && data.participant_id) ? data.participant_id : 0;
+            var order_enc = (data && data.order_enc) ? data.order_enc : '';
+
+            if (status == 'success') {
+                if (order_id > 0 && participant_id > 0) {
+                    psyemSendOrderTickets(order_id, participant_id);
+                }
+                setTimeout(() => {
+                    if (order_enc && order_enc.length > 0) {
+                        var redirectTo = psyOrderThankyouUrl + '?checkkey=' + order_enc;
+                        locationHref(redirectTo);
+                    }
+                }, 6000);
+            }
+            if (status == 'error') {
+                showHideButtonLoader(psyemContinueInvitationBtn, 'Hide');
+                setTimeout(() => {
+                    hidePanelLoader(psyemInvitationSection);
+                }, 2000);
+            }
+            setTimeout(() => {
+                hidePanelLoader(psyemInvitationSection);
+            }, 7000);
+            displayToaster(message, status);
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            displayToaster('Registration info has been failed to update', 'error');
+            setTimeout(() => {
+                hidePanelLoader(psyemInvitationSection);
             }, 2000);
         }
     });

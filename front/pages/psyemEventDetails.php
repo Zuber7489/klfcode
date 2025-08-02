@@ -27,7 +27,7 @@ while (have_posts()) : the_post();
     $event_checkout_url = psyem_GetPageLinkByID($psyem_event_checkout_page_id)  . '?checkkey=' . $checkout_key;
     $isBookingAllowed   = psyem_IsEventBookingAllowed(0, $psyemEventInfo);
     $eventRegType       = (isset($psyemEventMeta['psyem_event_registration_type'])) ? $psyemEventMeta['psyem_event_registration_type'] :  '';
-    $bookingUrlHtml     = ($isBookingAllowed == 'Yes' && $isPreview == false && $eventRegType == 'Free') ? '<a class="bookNowButton text-white" href="' . $event_checkout_url . '">Book Now</a>' : '';
+    $bookingUrlHtml     = ($isBookingAllowed == 'Yes' && $isPreview == false && ($eventRegType == 'Free' || $eventRegType == 'Invitation')) ? '<a class="bookNowButton text-white" href="' . $event_checkout_url . '">' . ($eventRegType == 'Invitation' ? __('Register', 'psyeventsmanager') : __('Book Now', 'psyeventsmanager')) . '</a>' : '';
 
     $excerpt            = @$psyemEventInfo['excerpt'];
     $fetauredImage      = @$psyemEventInfo['image'];
@@ -178,7 +178,7 @@ while (have_posts()) : the_post();
                                                 </p>
                                             </div>
                                         </div>
-                                        <?php if ($eventRegType == 'Free'): ?>
+                                        <?php if ($eventRegType == 'Free' || $eventRegType == 'Invitation'): ?>
                                             <div class="col-md-6">
                                                 <div class="eventAddress">
                                                     <h4 class="aboutPreTxt mb-1 fw200">
@@ -187,6 +187,8 @@ while (have_posts()) : the_post();
                                                     <p class="eventAddressPre">
                                                         <?php if ($eventRegType == 'Free'): ?>
                                                             <strong><?= $curreny_sign ?>0.00</strong>
+                                                        <?php elseif ($eventRegType == 'Invitation'): ?>
+                                                            <strong><?= __('Free', 'psyeventsmanager') ?></strong>
                                                         <?php endif; ?>
                                                     </p>
                                                 </div>

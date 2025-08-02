@@ -270,6 +270,9 @@ function psyem_ValidateEventOrderFreeBookingData($post = [])
     if (!isset($post['checkout_tickets']) || empty($post['checkout_tickets'])) {
         $errors[] = __('Participants count is required to process the request', 'psyeventsmanager');
     }
+    
+
+    
     if (!isset($post['action']) || empty($post['action'])) {
         $errors[] = __('Action is required to process the request', 'psyeventsmanager');
     }

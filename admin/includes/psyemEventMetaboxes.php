@@ -37,6 +37,9 @@
                     <option value="Free" <?= (@$psyem_event_registration_type == 'Free') ? 'selected="selected"' : '' ?>>
                         <?= __('Free Registration', 'psyeventsmanager') ?>
                     </option>
+                    <option value="Invitation" <?= (@$psyem_event_registration_type == 'Invitation') ? 'selected="selected"' : '' ?>>
+                        <?= __('Invitation Only', 'psyeventsmanager') ?>
+                    </option>
                 </select>
             </div>
 

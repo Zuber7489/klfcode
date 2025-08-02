@@ -586,6 +586,7 @@ class psyemFrontManager
         $participant_name   = @$postData['checkout_name'];
         $participant_email  = @$postData['checkout_email'];
         $checkout_company   = @$postData['checkout_company'];
+        $registration_type  = @$postData['registration_type'];
 
         $EventIdEnc         = @$postData['checkout_key'];
         $EventId            = (!empty($EventIdEnc)) ? psyem_safe_b64decode_id($EventIdEnc) : 0;
@@ -602,6 +603,8 @@ class psyemFrontManager
             );
             wp_send_json($resp, 200);
         }
+
+
 
         if (!empty($psyemEventInfo) && !empty($psyemEventMeta)) {
             try {
@@ -666,6 +669,11 @@ class psyemFrontManager
 
                     update_post_meta($inserted_order_id, 'psyem_order_coupon', '');
                     update_post_meta($inserted_order_id, 'psyem_order_coupon_data', []);
+                    
+                    // Store registration type if provided
+                    if ($registration_type == 'Invitation') {
+                        update_post_meta($inserted_order_id, 'psyem_order_registration_type', 'Invitation');
+                    }
 
                     // check if exiting particpant
                     $participantPostContent = $orderEnc . ' ' . @$psyemEventInfo['title'] . ' ' . strtolower($psyemEventInfo['title']) . ' ' . $participant_name . ' ' . $participant_email . ' ' . strtolower($participant_name) . ' ' . strtolower($participant_email);

@@ -3809,3 +3809,43 @@ msgstr ""
 #: helpers/psyemValidationsHelper.php:660
 msgid "Record slug is required to process the request"
 msgstr ""
+
+#: admin/includes/psyemEventMetaboxes.php:40
+msgid "Invitation Only"
+msgstr ""
+
+#: front/pages/psyemEventDetails.php:32
+msgid "Register with Invitation"
+msgstr ""
+
+#: front/pages/psyemEventDetails.php:195
+msgid "Invitation Required"
+msgstr ""
+
+#: front/pages/psyemEventCheckoutShortcode.php:340
+msgid "Invitation Registration"
+msgstr ""
+
+#: front/pages/psyemEventCheckoutShortcode.php:355
+msgid "Invitation Code"
+msgstr ""
+
+#: front/pages/psyemEventCheckoutShortcode.php:356
+msgid "Enter your invitation code"
+msgstr ""
+
+#: front/pages/psyemEventCheckoutShortcode.php:375
+msgid "Register with Invitation"
+msgstr ""
+
+#: front/psyemFront.php:595
+msgid "Invitation code is required"
+msgstr ""
+
+#: front/psyemFront.php:603
+msgid "Invalid invitation code"
+msgstr ""
+
+#: helpers/psyemValidationsHelper.php:278
+msgid "Invitation code is required for invitation registration"
+msgstr ""

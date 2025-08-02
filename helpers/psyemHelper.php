@@ -760,7 +760,7 @@ function psyem_IsEventBookingAllowed($EventId = 0, $eventWithMetaInfo = [])
 			}
 
 			$eventRegType       = (isset($psyemEventMeta['psyem_event_registration_type'])) ? $psyemEventMeta['psyem_event_registration_type'] :  '';
-			if (!($eventRegType == 'Paid') && !($eventRegType == 'Free')) {
+			if (!($eventRegType == 'Paid') && !($eventRegType == 'Free') && !($eventRegType == 'Invitation')) {
 				return 'No';
 			}
 		}

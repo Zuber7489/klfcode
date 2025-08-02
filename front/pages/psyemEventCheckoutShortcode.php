@@ -119,6 +119,13 @@ $psyem_event_listing_page_id    = @$psyem_options['psyem_event_listing_page_id']
                                                             </label>
                                                             <p> $0.00</p>
                                                         </div>
+                                                    <?php elseif ($eventRegType == 'Invitation'): ?>
+                                                        <div class="mb-3">
+                                                            <label class="fw-bold d-block mb-2">
+                                                                <?= __('Registration Ticket Price', 'psyeventsmanager') ?>
+                                                            </label>
+                                                            <p> $0.00</p>
+                                                        </div>
                                                     <?php endif; ?>
 
                                                     <div class="mb-3">
@@ -373,7 +380,59 @@ $psyem_event_listing_page_id    = @$psyem_options['psyem_event_listing_page_id']
                                             </div>
                                         <?php endif; ?>
 
-                                        <?php if (!($eventRegType == 'Paid') && !($eventRegType == 'Free')): ?>
+                                        <?php if ($eventRegType == 'Invitation'): ?>
+                                            <div class="col-md-8" id="psyemInvitationSection">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <h5 class="card-title"><?= __('Participants Info', 'psyeventsmanager') ?></h5>
+                                                    </div>
+
+                                                    <div class="card-body" id="psyemBasicInfoCont">
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-3">
+                                                                <label for="psyem_name" class="fw-bold d-block mb-2">
+                                                                    <?= __('Name', 'psyeventsmanager') ?>
+                                                                </label>
+                                                                <input type="name" class="form-control strict_space" id="psyem_name" name="psyem_name" value="" placeholder="<?= __('Enter your name', 'psyeventsmanager') ?>" />
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label for="psyem_email" class="fw-bold d-block mb-2">
+                                                                    <?= __('Email', 'psyeventsmanager') ?>
+                                                                </label>
+                                                                <input type="email" class="form-control strict_space" id="psyem_email" name="psyem_email" value="" placeholder="<?= __('Enter your valid email', 'psyeventsmanager') ?>" />
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label for="psyem_company" class="fw-bold d-block mb-2">
+                                                                    <?= __('Company', 'psyeventsmanager') ?>
+                                                                </label>
+                                                                <input type="text" class="form-control strict_space" id="psyem_company" name="psyem_company" value="" placeholder="<?= __('Enter company name', 'psyeventsmanager') ?>" />
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label for="psyem_tickets" class="fw-bold d-block mb-2">
+                                                                    <?= __('Participants', 'psyeventsmanager') ?>
+                                                                </label>
+                                                                <input type="number" class="form-control strict_integer strict_space" id="psyem_tickets" name="psyem_tickets" value="1" placeholder="<?= __('Select total participants', 'psyeventsmanager') ?>" />
+                                                            </div>
+                                                            <div class="col-md-12 text-center mt-5">
+                                                                <?php if ($isBookingAllowed == 'Yes'): ?>
+                                                                    <button class="btn btn-primary" id="psyemContinueInvitationBtn">
+                                                                        <span class="spinner-border buttonLoader spinner-border-sm" style="display: none;"></span>
+                                                                        <?= __('Submit to Book', 'psyeventsmanager') ?>
+                                                                    </button>
+                                                                <?php else: ?>
+                                                                    <p class="text-danger mb-1">
+                                                                        <span class="dashicons dashicons-info"></span>
+                                                                        <?= __('Registration for this event has been closed', 'psyeventsmanager') ?>
+                                                                    </p>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <?php if (!($eventRegType == 'Paid') && !($eventRegType == 'Free') && !($eventRegType == 'Invitation')): ?>
                                             <div class="col-md-8" id="psyemFalseSection">
                                                 <div class="card">
                                                     <div class="card-body">
