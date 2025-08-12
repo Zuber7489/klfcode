@@ -281,7 +281,7 @@
     border-bottom: 2px solid rgba(255, 255, 255, 0.37);
     position: relative;
     white-space: nowrap;
-    overflow-x: auto;
+
 }
 
 .donation-amount-select .container .donation-amount:first-of-type {
@@ -329,13 +329,14 @@
 .donation-amount-select .custom-donation-fieldgroup:before {
     content: attr(data-currency-value);
     font-size: 1em;
-    color: #FFF;
+    color: #fff;
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
     left: 32px;
     opacity: 0;
     transition: all 153ms ease-in;
+    margin-top: 2px;
 }
 
 .donation-amount-select .custom-donation-fieldgroup label {
@@ -350,6 +351,25 @@
     -o-transform: translateY(-50%);
     transform: translateY(-50%);
     display: none;
+}
+
+.donation-amount-select .custom-donation-fieldgroup .donation_currency_label {
+    font-size: 1em;
+    color: #FFF !important;
+    position: absolute;
+    top: 50%;
+    left: 32px;
+    transform: translateY(-50%);
+    
+    display: none;
+    z-index: 2;
+    line-height: 1;
+}
+
+.donation-amount-select .custom-donation-fieldgroup .donation_currency_label .donation_currency {
+    color: #FFF !important;
+    font-size: 1em;
+    line-height: 1;
 }
 
 .donation-amount-select .container .donation-amount.custom {
