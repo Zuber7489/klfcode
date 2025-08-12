@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Apply Chinese translations
         var translations = {
             'Donation Summary': '捐款摘要',
-            'Monthly Donation': '每月捐款',
+            'Monthly Donation': '每月定額捐款',
             'One time Donation': '一次性捐款', 
             'Change Amount?': '更改金額？',
             'Card & Billing': '信用卡及帳單資料',
