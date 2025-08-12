@@ -66,23 +66,23 @@ document.addEventListener('DOMContentLoaded', function() {
             'Monthly Donation': '每月定額捐款',
             'One time Donation': '一次性捐款', 
             'Change Amount?': '更改金額？',
-            'Card & Billing': '信用卡及帳單資料',
+            'Card & Billing': '信用卡和賬單',
             'Billing Address': '帳單地址',
-            'Additional Details': '額外詳細資料',
+            'Additional Details': '額外信息',
             'Country': '國家',
-            'Address Line 1': '地址第一行',
-            'Address Line 2': '地址第二行',
+            'Address Line 1': '地址欄1',
+            'Address Line 2': '地址欄2',
             'Town/City': '城市',
-            'District': '地區',
-            'First Name': '名',
-            'Last Name': '姓',
-            'Email Address': '電郵地址',
+            'District': '區域',
+            'First Name': '名字',
+            'Last Name': '姓氏',
+            'Email Address': '電子郵箱',
             'Phone Number': '電話號碼',
-            'Company/Organisation': '公司/機構',
-            'Sign up for our Newsletter': '訂閱我們的電子報',
+            'Company/Organisation': '公司/組織',
+            'Sign up for our Newsletter': '登記接收我們的通訊',
             'I agree to the': '我同意',
-            'Terms & Conditions': '條款及細則',
-            'Continue to Payment': '繼續付款'
+            'Terms & Conditions': '使用條款',
+            'Continue to Payment': '確認捐款'
         };
         
         // Apply translations to specific elements with more targeted approach
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Main form translations
         var cardBilling = document.querySelector('.cardBillingDetail h1');
         if (cardBilling && cardBilling.textContent.includes('Card & Billing')) {
-            cardBilling.textContent = '信用卡及帳單資料';
+            cardBilling.textContent = '信用卡和賬單';
         }
         
         // Section headers
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var additionalDetails = document.querySelectorAll('h5');
         additionalDetails.forEach(function(header) {
             if (header.textContent.includes('Additional Details')) {
-                header.textContent = '額外詳細資料';
+                header.textContent = '額外信息';
             }
         });
         
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
          var newsletterSpan = document.querySelectorAll('.newsletter-agree_wrapper span');
          newsletterSpan.forEach(function(span) {
              if (span.textContent.includes('Sign up for our Newsletter')) {
-                 span.textContent = '訂閱我們的電子報';
+                 span.textContent = '登記接收我們的通訊';
              }
              if (span.textContent.includes('I agree to the')) {
                  span.innerHTML = span.innerHTML.replace('I agree to the', '我同意');
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
          var termsLink = document.querySelectorAll('.newsletter-agree_wrapper a');
          termsLink.forEach(function(link) {
              if (link.textContent.includes('Terms & Conditions')) {
-                 link.textContent = '條款及細則';
+                 link.textContent = '使用條款';
              }
          });
          
