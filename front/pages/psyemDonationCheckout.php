@@ -82,7 +82,16 @@ document.addEventListener('DOMContentLoaded', function() {
             'Sign up for our Newsletter': '登記接收我們的通訊',
             'I agree to the': '我同意',
             'Terms & Conditions': '使用條款',
-            'Continue to Payment': '確認捐款'
+            'Continue to Payment': '確認捐款',
+            'Card Details': '信用卡詳情',
+            'Please wait': '請稍候',
+            'By submitting payment details, I hereby agreed with the terms & conditions': '提交付款詳情即表示我同意條款及細則',
+            'Donate & Confirm': '確認捐款',
+            'Thank You': '謝謝您',
+            'Thank you for your donation': '感謝您的捐款',
+            'REFERENCE ID': '參考編號',
+            'BACK TO HOMEPAGE': '返回主頁',
+            'Please select an amount first to proceed with the donation checkout': '請先選擇金額以進行捐款結帳'
         };
         
         // Apply translations to specific elements with more targeted approach
@@ -162,8 +171,61 @@ document.addEventListener('DOMContentLoaded', function() {
                   // Buttons and links
          var continueBtn = document.querySelector('#psyemContinuePaymentBtn');
          if (continueBtn && continueBtn.textContent.includes('Continue to Payment')) {
-             continueBtn.innerHTML = continueBtn.innerHTML.replace('Continue to Payment', '繼續付款');
+             continueBtn.innerHTML = continueBtn.innerHTML.replace('Continue to Payment', '確認捐款');
          }
+         
+         // Card Details section
+         var cardDetailsHeaders = document.querySelectorAll('h5');
+         cardDetailsHeaders.forEach(function(header) {
+             if (header.textContent.includes('Card Details')) {
+                 header.textContent = '信用卡詳情';
+             }
+         });
+         
+         // Payment form elements
+         var pleaseWaitText = document.querySelector('.stripeLoader');
+         if (pleaseWaitText && pleaseWaitText.textContent.includes('Please wait')) {
+             pleaseWaitText.innerHTML = pleaseWaitText.innerHTML.replace('Please wait', '請稍候');
+         }
+         
+         var paymentTermsLabel = document.querySelector('.paymentTermsLabel');
+         if (paymentTermsLabel && paymentTermsLabel.textContent.includes('By submitting payment details, I hereby agreed with the terms & conditions')) {
+             paymentTermsLabel.textContent = '提交付款詳情即表示我同意條款及細則';
+         }
+         
+         var donateConfirmBtn = document.querySelector('#button-text');
+         if (donateConfirmBtn && donateConfirmBtn.textContent.includes('Donate & Confirm')) {
+             donateConfirmBtn.textContent = '捐款並確認';
+         }
+         
+         // Thank You section
+         var thankYouTitle = document.querySelector('.card-title');
+         if (thankYouTitle && thankYouTitle.textContent.includes('Thank You')) {
+             thankYouTitle.textContent = '謝謝您';
+         }
+         
+         var thankYouMessage = document.querySelectorAll('.alert-success');
+         thankYouMessage.forEach(function(alert) {
+             if (alert.textContent.includes('Thank you for your donation')) {
+                 alert.textContent = '感謝您的捐款';
+             }
+             if (alert.innerHTML.includes('REFERENCE ID')) {
+                 alert.innerHTML = alert.innerHTML.replace('REFERENCE ID', '參考編號');
+             }
+         });
+         
+         var backToHomepage = document.querySelector('.alert-link');
+         if (backToHomepage && backToHomepage.textContent.includes('BACK TO HOMEPAGE')) {
+             backToHomepage.textContent = '返回主頁';
+         }
+         
+         // Error message for no amount selected
+         var noAmountAlert = document.querySelectorAll('.alert-info strong');
+         noAmountAlert.forEach(function(alert) {
+             if (alert.textContent.includes('Please select an amount first to proceed with the donation checkout')) {
+                 alert.textContent = '請先選擇金額以進行捐款結帳';
+             }
+         });
          
          // Header Navigation Translations
          var headerTranslations = {
